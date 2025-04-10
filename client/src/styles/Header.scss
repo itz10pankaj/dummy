@@ -1,0 +1,47 @@
+.header {
+    background-color: #2563eb; // Equivalent to bg-blue-600
+    padding: 16px; // Equivalent to p-4
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  
+    h1 {
+      font-size: 1.25rem; // Equivalent to text-xl
+      font-weight: bold;
+    }
+  
+    .user-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+  
+      p {
+        margin: 0;
+      }
+  
+      button {
+        padding: 8px 16px;
+        border-radius: 8px;
+        color: white;
+        transition: background-color 0.3s ease-in-out;
+        border: none;
+        cursor: pointer;
+  
+        &.upload {
+          background-color: #22c55e; // Equivalent to bg-green-500
+          &:hover {
+            background-color: #16a34a; // Equivalent to hover:bg-green-600
+          }
+        }
+  
+        &.logout {
+          background-color: #ef4444; // Equivalent to bg-red-500
+          &:hover {
+            background-color: #dc2626; // Equivalent to hover:bg-red-600
+          }
+        }
+      }
+    }
+  }
+  

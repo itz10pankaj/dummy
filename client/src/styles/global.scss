@@ -1,0 +1,57 @@
+@use "./Header";
+@use "./Footer";
+
+
+
+/* ✅ Global Styling */
+body {
+  font-family: "Arial", sans-serif;
+  background-color: #f8f8f8;
+  margin: 0;
+  padding: 0;
+}
+/* Add this to your global CSS file */
+.scrollbar-hide {
+  scrollbar-width: none; /* For Firefox */
+  -ms-overflow-style: none; /* For Internet Explorer and Edge */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none; /* For Chrome, Safari, and Opera */
+}
+
+button {
+  padding: 8px 16px;
+  border-radius: 8px;
+  color: white;
+  transition: background-color 0.3s ease-in-out;
+  border: none;
+  cursor: pointer;
+
+  &.upload {
+    background-color: #22c55e; // Equivalent to bg-green-500
+    &:hover {
+      background-color: #16a34a; // Equivalent to hover:bg-green-600
+    }
+  }
+}
+.content-container table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.content-container th,
+.content-container td {
+  border: 1px solid black;
+  padding: 8px;
+}
+
+.content-container ul {
+  list-style-type: disc;
+  padding-left: 20px;
+}
+
+.content-container ol {
+  list-style-type: decimal;
+  padding-left: 20px;
+}
