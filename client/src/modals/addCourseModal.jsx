@@ -42,10 +42,6 @@ const AddCourseModal = ({ closeModal,updateCourses }) => {
     }
 
     try {
-        // Send request to add a new course
-        // const response = await axios.post("http://localhost:8081/api/courses", {
-        //     name: courseName,
-        // });
         const newCourse=await  addCourseApi({ name: courseName });
         // Success message
         toast.success("Course added successfully!", {
@@ -53,8 +49,6 @@ const AddCourseModal = ({ closeModal,updateCourses }) => {
             autoClose: 2000,
         });
 
-        // Update course list
-        // setCourses((prevCourses) => [...prevCourses, response.data.data]);
         updateCourses((prevCourses) => [...prevCourses, newCourse]);
         dispatch(addCourse(newCourse));
         // Reset input field

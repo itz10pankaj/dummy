@@ -14,18 +14,8 @@ const EditContentModal = ({ content, menuId, closeModal, updateContents }) => {
             console.log("Saving content...");
             console.log("Current content ID:", content.id);
             console.log("New content:", newContent);
-    
-            // Update content on the server
-            // const response = await axios.put(
-            //     `http://localhost:8081/api/content/${menuId}/${content.id}`,
-            //     { text: newContent }
-            // );
             const updatedContent = await updateContentApi(menuId, content.id, newContent);
 
-    
-            // console.log("Updated content from server:", response.data);
-    
-            // Update local state in Content.jsx
             updateContents((prevContents) =>
                 prevContents.map((c) => (c.id === content.id ? updatedContent : c))
             );

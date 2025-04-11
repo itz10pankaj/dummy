@@ -5,10 +5,6 @@ import {redisClient} from "../config/redis-client.js"
 import { Menu } from "../models/Menu.js";
 import { responseHandler } from "../utlis/responseHandler.js";
 const getContentByMenuId = async (menuId) => {
-    // return await AppDataSource.getRepository(Content).find({
-    //     where: { menu: { id: menuId } },
-    //     relations: ["menu"]
-    // });
     return await AppDataSource.getRepository(Content)
         .createQueryBuilder("content")
         .innerJoinAndSelect("content.menu", "menu")
@@ -25,7 +21,7 @@ export const getContent = async (req, res) => {
         const cachedData = await redisClient.get(`content:${decryptedMenuId}`);
         if (cachedData) {
             console.log("Cache hit");
-            // return res.json(JSON.parse(cachedData)); // Redis se response return
+            // return res.json(JSON.parse(cachedData));
             return responseHandler.success(res, JSON.parse(cachedData), "Content fetched successfully", 200);
         }
         console.log("Fetching content for menu ID:", menuId);
@@ -70,7 +66,7 @@ export const addContent = async (req, res) => {
         // Create new content
         const newContent = contentRepository.create({
             text,
-            menu, // Associate with the menu
+            menu, 
         });
 
         await contentRepository.save(newContent);

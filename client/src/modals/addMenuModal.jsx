@@ -14,7 +14,6 @@ const AddMenuModal = ({ closeModal,updateMenus,menus }) => {
   useEffect(() => {
     const fetchCourses = async () => {
       try {
-        // const res = await axios.get("http://localhost:8081/api/courses");
         const courses=await getCourses(true);
         setCourses(courses);
       } catch (error) {
@@ -46,11 +45,6 @@ const AddMenuModal = ({ closeModal,updateMenus,menus }) => {
 
     try {
       const encryptedCourseId = encryptID(selectedCourse);
-
-      // Send request to add a new menu
-      // const response = await axios.post(`http://localhost:8081/api/menu/${encryptedCourseId}`, {
-      //   name: menuName,
-      // });
       const response = await addMenuApi({ name: menuName }, encryptedCourseId);
       toast.success("Menu added successfully!", { position: "top-right", autoClose: 2000 });
 

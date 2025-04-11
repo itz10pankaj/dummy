@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
 import { io } from "socket.io-client";
-// const socket = io("http://localhost:8081", { withCredentials: true });
 const socket = io(import.meta.env.VITE_SOCKET_URL, { withCredentials: true });
 import { fetchMessages,uploadFile,getUsers } from "../services/apiServices";
 const Chat = ({ initialUser }) => {
@@ -97,7 +96,6 @@ const Chat = ({ initialUser }) => {
 
         return () => {
             socket.off("receiveMessage", handleReceiveMessage);
-            // socket.disconnect();
         };
     }, [user.id]);
 

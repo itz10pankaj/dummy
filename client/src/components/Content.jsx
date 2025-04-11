@@ -20,8 +20,8 @@ const Content = ({ initialContents, initialImages }) => {
     const user = useSelector((state) => state.auth.user);
     const [isContentModalOpen, setIsContentModalOpen] = useState(false);
     const [isImageModalOpen, setIsImageModalOpen] = useState(false);
-    const [isEditModalOpen, setIsEditModalOpen] = useState(false); // State for edit modal
-    const [currentContent, setCurrentContent] = useState(null); // State for the content to be edited
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false); 
+    const [currentContent, setCurrentContent] = useState(null);
     const fetchContents = async () => {
         if (!menuId) return;
         const contents = await getContents(menuId);
@@ -132,7 +132,6 @@ const Content = ({ initialContents, initialImages }) => {
                     updateContents={setLocalContents}
                 />
             )}
-            {/* Render Images */}
 
         </div>
     );

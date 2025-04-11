@@ -25,7 +25,6 @@ const Header = (initialUser) => {
       setTimeout(() => {
         dispatch(logout());
         window.location.href = "/login";
-        // navigate("/login", { replace: true });
         
         
       }, 500);

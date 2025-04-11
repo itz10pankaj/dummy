@@ -86,7 +86,6 @@ useEffect(() => {
       dispatch(login(response.user));
       toast.success("Google Login Successful!", { position: "top-right", autoClose: 2000 });
       setTimeout(() => {
-        // window.location.reload();
         navigate("/home");
         window.location.reload();
       }, 500);

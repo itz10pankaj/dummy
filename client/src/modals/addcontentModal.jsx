@@ -5,7 +5,7 @@ import { encryptID } from "../services/UrlEncode";
 import { useDispatch, useSelector } from "react-redux";
 import { setContents } from "../redux/slices/contentSlice";
 import CKEditorComponent from "../components/CKEditorComponent";
-import { getCourses,getMenus,addContentApi } from "../services/apiServices";
+import { getCourses,getMenus,addContentApi,uploadImage } from "../services/apiServices";
 const AddContentModal = ({ closeModal }) => {
   const dispatch = useDispatch();
   const contents = useSelector((state) => state.contents);
@@ -61,9 +61,6 @@ const AddContentModal = ({ closeModal }) => {
 
     try {
       const encryptedMenuId = encryptID(menuId);
-      // const response = await axios.post(`http://localhost:8081/api/content/${encryptedMenuId}`, {
-      //   text: content,
-      // });
       const response = await addContentApi(content,encryptedMenuId);
 
       const newContent = response;
@@ -89,18 +86,27 @@ const AddContentModal = ({ closeModal }) => {
       });
     }
   };
-  const handleImageUpload = async (formData) => {
+  // const handleImageUpload = async (formData) => {
+  //   try {
+  //     const response = await fetch("http://localhost:8081/api/upload", {
+  //       method: "POST",
+  //       body: formData,
+  //     });
+  
+  //     if (!response.ok) {
+  //       throw new Error("Failed to upload image");
+  //     }
+  
+  //     return await response.json();
+  //   } catch (error) {
+  //     console.error("Image upload failed:", error);
+  //     return { uploaded: false, error: error.message };
+  //   }
+  // };
+  const handleImageUpload = async (file) => {
     try {
-      const response = await fetch("http://localhost:8081/api/upload", {
-        method: "POST",
-        body: formData,
-      });
-  
-      if (!response.ok) {
-        throw new Error("Failed to upload image");
-      }
-  
-      return await response.json();
+      const result = await uploadImage(file, menuId);
+      return result;
     } catch (error) {
       console.error("Image upload failed:", error);
       return { uploaded: false, error: error.message };

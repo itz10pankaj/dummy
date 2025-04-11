@@ -36,7 +36,7 @@ const Contact = ({ initialUser }) => {
         fetchLoactions();
     }, []);
     useEffect(() => {
-        if (!user?.latitude || !user?.longitude) return; // Check if user exists
+        if (!user?.latitude || !user?.longitude) return; 
 
         const newMarkers = locations.filter((marker) => {
             const distance = getDistance(user.latitude, user.longitude, marker.latitude, marker.longitude);

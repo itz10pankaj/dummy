@@ -6,7 +6,6 @@ console.log("tableName", tableName);
 export const Content = new EntitySchema({
     name: "Content",
     tableName: tableName,
-    // tableName:process.env.TABLE_CONTENT
     columns: {
         id: {
             primary: true,

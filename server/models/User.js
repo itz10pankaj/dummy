@@ -1,7 +1,7 @@
 import { EntitySchema } from "typeorm";
 import dotenv from "dotenv";
 dotenv.config();    
-const tableName = process.env.TABLE_USERS; // Use the environment variable for the table name
+const tableName = process.env.TABLE_USERS; 
 export const User = new EntitySchema({
     name: "User",
     tableName: tableName,

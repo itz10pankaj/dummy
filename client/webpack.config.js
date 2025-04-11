@@ -1,25 +1,25 @@
 import path from 'path';
-// import fs from 'fs';
+import fs from 'fs';
 import HtmlWebpackPlugin from 'html-webpack-plugin';
 import nodeExternals from 'webpack-node-externals';
 
 const __dirname = path.resolve();
 
 //dynamically create entry points for all pages in the src/pages directory
-// const pagesDir = path.resolve(__dirname, 'src/pages');
-// const entryPoints = fs.readdirSync(pagesDir)
-//   .filter((file) => file.endsWith('.jsx')) 
-//   .reduce((entries, file) => {
-//     const name = path.basename(file, '.jsx'); 
-//     entries[name] = path.resolve(pagesDir, file); 
-//     return entries;
-//   }, {});
+const pagesDir = path.resolve(__dirname, 'src/pages');
+const entryPoints = fs.readdirSync(pagesDir)
+  .filter((file) => file.endsWith('.jsx')) 
+  .reduce((entries, file) => {
+    const name = path.basename(file, '.jsx'); 
+    entries[name] = path.resolve(pagesDir, file); 
+    return entries;
+  }, {});
 
-const entryPoint = './src/pages/Home.jsx';
+// const entryPoint = './src/pages/Home.jsx';
 const clientConfig = {
   mode: 'production',
   target: 'web', // Target the browser
-  entry: entryPoint,
+  entry: entryPoints,
   // entry: {
     // home: './src/pages/Home.jsx', // Entry point for Home page
     // test: './src/pages/Test.jsx', // Entry point for Test page
@@ -87,15 +87,15 @@ const clientConfig = {
     //   chunks: ['contact'], // Include only the Other page bundle
     //   filename: 'contact.html', // Output file for Other page
     // }),
-    // ...Object.keys(entryPoints).map(
-    //   (name) =>
-    //     new HtmlWebpackPlugin({
-    //       template: './index.html',
-    //       inject: true,
-    //       chunks: [name], // Include only the specific page bundle
-    //       filename: `${name}.html`, // Output file for the page
-    //     })
-    // ),
+    ...Object.keys(entryPoints).map(
+      (name) =>
+        new HtmlWebpackPlugin({
+          template: './index.html',
+          inject: true,
+          chunks: [name], // Include only the specific page bundle
+          filename: `${name}.html`, // Output file for the page
+        })
+    ),
   // ],
   new HtmlWebpackPlugin({
     template: './index.html',

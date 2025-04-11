@@ -15,24 +15,18 @@ export const getImagesController=async(req,res)=>{
     try{
         const {menuId}=req.params;
         const decryptedMenuId = decryptID(menuId);
-        // console.log(`Checking cache for: images:${decryptedMenuId}`);
         const cachedImages = await redisClient.get(`images:${decryptedMenuId}`);
         if (cachedImages) {
             console.log("Serving from cache");
             // return res.json(JSON.parse(cachedImages));
             return responseHandler.success(res, JSON.parse(cachedImages), "Images fetched successfully", 200);
         }
-        // console.log("Fetching from database");
         const images=await getImagesbyMenuID(decryptedMenuId);
-        // console.log(images);
-        // console.log("Storing in cache");
         try {
             await redisClient.setex(`images:${decryptedMenuId}`, 3600, JSON.stringify(images));
-            // console.log("Stored in cache");
         } catch (redisError) {
             console.error("Redis Store Error:", redisError);
         }
-        // console.log("Stored in cache");
         // res.json(images);
         return responseHandler.success(res, images, "Images fetched successfully", 200);
     }catch(err){
@@ -81,8 +75,8 @@ export const addImageController = async (req, res) => {
 };
 
 export const attachController = async (req, res) => {
-    console.log("File received in attachController:", req.file); // Debugging log
-    console.log("Request body:", req.body); // Debugging log
+    // console.log("File received in attachController:", req.file); // Debugging log
+    // console.log("Request body:", req.body); // Debugging log
   
     if (!req.file) {
       return res.status(400).json({ message: "No file uploaded!" });

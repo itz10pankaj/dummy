@@ -27,7 +27,6 @@ const Home = ({ initialData }) => {
     const menu = params.get("menu");
     setSelectedCourse(course);
     setSelectedMenu(menu);
-    // console.log('🚀 Initial Data (Home):', initialData);
   }, [location.search, selectedCourse, selectedMenu]);
 
   

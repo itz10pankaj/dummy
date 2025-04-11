@@ -23,7 +23,7 @@ const Menus = ({ initialMenus }) => {
             if (!courseId) return; // Skip if no course is selected
             try {
                 const menuData = await getMenus(courseId);
-                // console.log("hii",response.data.data);
+                // console.log("hii",response.data.data); 
                 setLocalMenus(menuData); // Update local state
                 dispatch(setMenus({ courseId: decryptedCourseId, menus: menuData })); // Update Redux store
 

@@ -7,9 +7,9 @@ import AddCourseModal from "../modals/addCourseModal";
 import { getCourses } from "../services/apiServices";
 const Courses = ({ initialCourses }) => {
     const dispatch = useDispatch();
-    const [courses, setLocalCourses] = useState(initialCourses || []); // Use initialCourses for SSR
+    const [courses, setLocalCourses] = useState(initialCourses || []); 
     const [searchParams, setSearchParams] = useSearchParams();
-    const navigate = useNavigate(); // Use navigate for client-side routing
+    const navigate = useNavigate(); 
     const selectedCourse = searchParams.get("course");
     const user = useSelector((state) => state.auth.user);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -45,7 +45,7 @@ const Courses = ({ initialCourses }) => {
         <div className="w-full flex gap-4">
             <ul className="flex gap-4 overflow-x-auto whitespace-nowrap">
                 {courses
-                    .filter((course) => course && course.id) // Filter out invalid courses
+                    .filter((course) => course && course.id) 
                     .map((course,idx) => {
                     return (
                         <li

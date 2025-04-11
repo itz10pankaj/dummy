@@ -20,7 +20,6 @@ export const getMetaData = async (req, res) => {
                 return responseHandler.badRequest(res, "Invalid Meta ID", 400);
             }
 
-            // Check Redis Cache
             const cachedMetadata = await redisClient.get(`metadata:${decryptedMetaID}`);
             if (cachedMetadata) {
                 console.log("Serving metadata from cache");
