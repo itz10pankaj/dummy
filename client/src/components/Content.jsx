@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import axios from "axios";
 import { setContents } from "../redux/slices/contentSlice";
 import { setImages } from "../redux/slices/imageSlice";
 import { useSearchParams } from "react-router-dom";
@@ -8,6 +7,7 @@ import { decryptID } from "../services/UrlEncode";
 import ImageUploadModal from "../modals/imageUploadModal";
 import AddContentModal from "../modals/addcontentModal";
 import EditContentModal from "../modals/EditContentModal";
+import { getContents ,getImages} from "../services/apiServices";
 const Content = ({ initialContents, initialImages }) => {
     const dispatch = useDispatch();
     const [contents, setLocalContents] = useState(initialContents || []);
@@ -24,26 +24,18 @@ const Content = ({ initialContents, initialImages }) => {
     const [currentContent, setCurrentContent] = useState(null); // State for the content to be edited
     const fetchContents = async () => {
         if (!menuId) return;
-        try {
-            // console.log(`http://localhost:8081/api/content/${menuId}`)
-            const response = await axios.get(`http://localhost:8081/api/content/${menuId}`);
-            setLocalContents(response.data.data);
-            dispatch(setContents({ [decryptedMenuId]: response.data.data}));
-        } catch (err) {
-            console.error("Error fetching contents:", err);
-        }
+        const contents = await getContents(menuId);
+        setLocalContents(contents);
+        dispatch(setContents({ [decryptedMenuId]: contents }));
+        
     };
 
 
     const fetchImages = async () => {
         if (!menuId) return;
-        try {
-            const response = await axios.get(`http://localhost:8081/api/images/${menuId}`);
-            setLocalImages(response.data);
-            dispatch(setImages({ [decryptedMenuId]: response.data }));
-        } catch (err) {
-            console.error("Error fetching images:", err);
-        }
+        const images = await getImages(menuId);
+        setLocalImages(images);
+        dispatch(setImages({ [decryptedMenuId]: images }));
     };
 
     useEffect(() => {

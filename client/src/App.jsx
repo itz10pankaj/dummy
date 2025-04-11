@@ -45,8 +45,8 @@ function App({ initialData }) {
   }, [reduxUser, dispatch, initialData]);
 
   return (
-    <GoogleOAuthProvider clientId="739885106487-uqevo2bq9nms7uptck75n7ifpp2e8ped.apps.googleusercontent.com">
-      <HelmetProvider>
+    <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
+    <HelmetProvider>
         <MetaTitleProvider>
           <Layout initialUser={initialData?.user}>
             <Router initialData={initialData} />

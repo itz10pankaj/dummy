@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { uploadImage } from "../services/apiServices";
 
 const CKEditorComponent = ({ initialData, onChange, menuId }) => {
   const [editorLoaded, setEditorLoaded] = useState(false);
@@ -114,27 +115,9 @@ class CustomUploadAdapter {
     this.menuId = menuId;
   }
 
-  upload() {
-    return this.loader.file
-      .then((file) => {
-        const formData = new FormData();
-        formData.append("image", file); // Match the field name expected by multer
-        formData.append("menuId", this.menuId); // Add menuId to the request
-
-        return fetch("http://localhost:8081/api/upload", {
-          method: "POST",
-          body: formData,
-        })
-        .then((response) => response.json())
-        .then((res) => {
-          const data = res.data;
-          if (data?.uploaded) {
-            return { default: data.url };
-          } else {
-            throw new Error(res.message || "Failed to upload image");
-          }
-        });
-      });
+  async upload() {
+    const file = await this.loader.file;
+    return uploadImage(file, this.menuId);
   }
 
   abort() {

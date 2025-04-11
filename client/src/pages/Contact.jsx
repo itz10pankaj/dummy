@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import MapComponent from "../components/MapComponent";
-import axios from "axios";
-import Chat from "../components/Chat";
 
+import Chat from "../components/Chat";
+import { getLocations } from "../services/apiServices";
 
 
 const getDistance = (lat1, lon1, lat2, lon2) => {
@@ -27,15 +27,10 @@ const Contact = ({ initialUser }) => {
     let RoleAdmin = initialUser?.role === "admin" ? true : false;
     useEffect(() => {
         const fetchLoactions = async () => {
-            try {
-                // console.log("API CALL GYI HAI 1");
-                const response = await axios.get("http://localhost:8081/api/locations");
-                // console.log(response.data);
-                setLocations(response.data.data);
-                // console.log("Loactions",locations)
-            } catch (err) {
-                console.error("Error fetching courses:", err);
-            }
+            const locationsData = await getLocations();
+            // console.log("Locations Data:", locationsData);
+            setLocations(locationsData);
+            // console.log("Locations:", locations);
         };
 
         fetchLoactions();

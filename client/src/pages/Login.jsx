@@ -7,6 +7,7 @@ import { useDispatch } from 'react-redux';
 import { login } from '../redux/slices/authSlice';
 import axios from 'axios';
 import { GoogleLogin } from '@react-oauth/google';
+import { loginUser,googleLoginUser } from '../services/apiServices';
 const Login = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -58,11 +59,12 @@ useEffect(() => {
     }
 
     try {
-      const response = await axios.post("http://localhost:8081/api/auth/login", {...values,
+      const response = await loginUser({
+        ...values,
         latitude: location.latitude,
         longitude: location.longitude
       });
-      dispatch(login(response.data.user));
+      dispatch(login(response.user));
       toast.success("Login Successful!", { position: "top-right", autoClose: 2000 });
       setTimeout(() => {
         navigate("/home")
@@ -76,12 +78,12 @@ useEffect(() => {
   };
   const handleGoogleLoginSuccess = async (credentialResponse) => {
     try {
-      const response = await axios.post("http://localhost:8081/api/auth/google-login", {
+      const response = await googleLoginUser({
         token: credentialResponse.credential,
         latitude: location.latitude,
-        longitude: location.longitude,
+        longitude: location.longitude
       });
-      dispatch(login(response.data.user));
+      dispatch(login(response.user));
       toast.success("Google Login Successful!", { position: "top-right", autoClose: 2000 });
       setTimeout(() => {
         // window.location.reload();

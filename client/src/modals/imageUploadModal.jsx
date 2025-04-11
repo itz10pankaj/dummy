@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { encryptID } from "../services/UrlEncode";
 import { useDispatch, useSelector } from "react-redux";
 import { setImages } from "../redux/slices/imageSlice";
+import { getCourses,getMenus,uploadImageApi } from "../services/apiServices";
 const ImageUploadModal = ({ closeModal }) => {
   const dispatch = useDispatch();
   const images = useSelector((state) => state.images);
@@ -18,8 +18,9 @@ const ImageUploadModal = ({ closeModal }) => {
   useEffect(() => {
     const fetchCourses = async () => {
       try {
-        const res = await axios.get("http://localhost:8081/api/courses");
-        setCourses(res.data.data);
+        // const res = await axios.get("http://localhost:8081/api/courses");
+        const res = await getCourses(true);
+        setCourses(res);
       } catch (error) {
         console.error("Error fetching courses:", error);
       }
@@ -44,8 +45,9 @@ const ImageUploadModal = ({ closeModal }) => {
   // Function to fetch menus based on the selected course
   const fetchMenus = async (courseId) => {
     try {
-      const res = await axios.get(`http://localhost:8081/api/menu/${encryptID(courseId)}`);
-      setMenus(res.data.data);
+      // const res = await axios.get(`http://localhost:8081/api/menu/${encryptID(courseId)}`);
+      const res= await getMenus(encryptID(courseId));
+      setMenus(res);
       setMenuId(""); // Reset menu selection when course changes
     } catch (error) {
       console.error("Error fetching menus:", error);
@@ -70,8 +72,9 @@ const ImageUploadModal = ({ closeModal }) => {
     formData.append("menuId", encryptedMenuId);
 
     try {
-      const response = await axios.post("http://localhost:8081/api/upload", formData);
-      const newImage = response.data;
+      // const response = await axios.post("http://localhost:8081/api/upload", formData);
+      const response = await uploadImageApi(formData);
+      const newImage = response;
 
       // Update Redux store
       dispatch(setImages({

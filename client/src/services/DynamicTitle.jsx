@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect } from "react";
 import { useLocation, useSearchParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { decryptID } from "./UrlEncode";
-
+import { getMetaTitle } from "./apiServices";
 const MetaTitleContext = createContext();
 
 export const MetaTitleProvider = ({ children, initialTitle = "My Website" }) => {
@@ -10,30 +10,16 @@ export const MetaTitleProvider = ({ children, initialTitle = "My Website" }) => 
     const [title, setTitle] = useState(initialTitle);
     const [searchParams] = useSearchParams();
 
-    const fetchMetaTitle = async (page, encryptedCourseId = null) => {
-        try {
-            const decryptedCourseId = encryptedCourseId ? decryptID(encryptedCourseId) : null;
-            
-            const endpoint = decryptedCourseId
-                ? `http://localhost:8081/api/meta-title?page=/course/${decryptedCourseId}`
-                : `http://localhost:8081/api/meta-title?page=${page}`;
-
-            const response = await fetch(endpoint);
-            if (!response.ok) {
-                throw new Error(`Failed to fetch meta title: ${response.statusText}`);
-            }
-
-            const data = (await response.json()).data;
-            setTitle(data.metaTitle || "Default Title | My Website");
-            document.title = data.metaTitle || "Default Title | My Website";
-        } catch (error) {
-            console.error("Error fetching meta title:", error);
-        }
+    const fetchMetaTitle = async (page, decryptedCourseId = null) => {
+        const fetchedTitle = await getMetaTitle(page, decryptedCourseId);
+        setTitle(fetchedTitle || "Default Title | My Website"); 
+        document.title = fetchedTitle || "Default Title | My Website";
     };
 
     useEffect(() => {
         const encryptedCourseId = searchParams.get("course");
-        fetchMetaTitle(location.pathname, encryptedCourseId);
+        const decryptedCourseId = encryptedCourseId ? decryptID(encryptedCourseId) : null;
+        fetchMetaTitle(location.pathname, decryptedCourseId);
     }, [location.pathname, searchParams]);
 
     return (

@@ -15,6 +15,7 @@ import { getMetaData } from "./controllers/getMetaDataController.js";
 import locationRoute from "./routes/LocationRoute.js"
 import { initSocket } from "./config/socket.js";
 import chatRoutes from "./routes/chatRoutes.js";
+import { responseHandler } from "./utlis/responseHandler.js";
 const app = express();
 const httpServer=http.createServer(app);
 initSocket(httpServer);
@@ -43,10 +44,12 @@ if (check) {
                 value: parseFloat(row[1])
             })).reverse(); // Keep oldest first
 
-            res.json(data);
+            // res.json(data);
+            return responseHandler(res, 200, "success", data);
         } catch (err) {
             console.error('Error:', err);
-            res.status(500).send('Something went wrong');
+            // res.status(500).send('Something went wrong');
+            return responseHandler(res, 500, "error", err);
         }
     });
     const insertData = async () => {

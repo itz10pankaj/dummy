@@ -6,7 +6,7 @@ import store from './redux/store.js';
 import App from "./App.jsx";
 import { MetaTitleProvider } from './services/DynamicTitle.jsx';
 import { decryptID } from './services/UrlEncode.js';
-
+import { getMetaTitle,getCourses,getContents,getImages,getMenus } from './services/apiServices.js';
 export async function render(url, user = null) {
     const helmetContext = {};
     const urlParams = new URLSearchParams(url.split('?')[1]);
@@ -16,75 +16,13 @@ export async function render(url, user = null) {
     const page = url.split('?')[0];
 
     let metaTitle = "Default Title | My Website";
-    let courses = [];
-    let menus = [];
-    let contents = [];
-    let images = [];
+    const courses = await getCourses(user);
+    const menus = decryptedCourseId ? await getMenus(encryptedCourseId) : [];
+    const contents = menuId ? await getContents(menuId) : [];
+    const images = menuId ? await getImages(menuId) : [];
 
-    // Fetch meta title
-    try {
-        const metaRes = await fetch(
-            decryptedCourseId
-                ? `http://localhost:8081/api/meta-title?page=/course/${decryptedCourseId}`
-                : `http://localhost:8081/api/meta-title?page=${page}`
-        );
-        if (metaRes.ok) {
-            const metaData = (await metaRes.json()).data;
-            metaTitle = metaData.metaTitle || metaTitle;
-        }
-    } catch (error) {
-        console.error("Error fetching meta title:", error);
-    }
-
-    // Fetch courses
-    if (user != null) {
-        try {
-            const coursesRes = await fetch(`http://localhost:8081/api/courses`);
-
-            // console.log((await coursesRes.json()).data);
-            if (coursesRes.ok) {
-                // courses = (await coursesRes.json()).data;
-                courses = (await coursesRes.json()).data;
-                // courses=hlo.data.data
-            }
-        } catch (error) {
-            console.error("Error fetching courses:", error);
-        }
-    }
-    // Fetch menus for the selected course
-    if (decryptedCourseId) {
-        try {
-            const menusRes = await fetch(`http://localhost:8081/api/menu/${encryptedCourseId}`);
-            if (menusRes.ok) {
-                menus = (await menusRes.json()).data;
-                // console.log("mennu",menus)
-            }
-        } catch (error) {
-            console.error(`Error fetching menus for course ${decryptedCourseId}:`, error);
-        }
-    }
-
-    // Fetch contents and images for the selected menu
-    if (menuId) {
-        try {
-            const contentsRes = await fetch(`http://localhost:8081/api/content/${menuId}`);
-            if (contentsRes.ok) {
-                contents = (await contentsRes.json()).data;
-                console.log(contents)
-            }
-        } catch (error) {
-            console.error(`Error fetching contents for menu ${menuId}:`, error);
-        }
-
-        try {
-            const imagesRes = await fetch(`http://localhost:8081/api/images/${menuId}`);
-            if (imagesRes.ok) {
-                images = await imagesRes.json();
-            }
-        } catch (error) {
-            console.error(`Error fetching images for menu ${menuId}:`, error);
-        }
-    }
+    // Fetch meta title based on the page and course ID
+    metaTitle=await(getMetaTitle(page, decryptedCourseId))
 
     // Construct the initialData object
     const initialData = {

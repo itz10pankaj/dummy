@@ -2,7 +2,7 @@ import React from "react";
 import { useNavigate,useLocation } from "react-router";
 import {  useDispatch,useSelector } from "react-redux";
 import { logout } from "../redux/slices/authSlice";
-import axios from "axios";
+import { logoutUser } from "../services/apiServices";
 const Header = (initialUser) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -14,7 +14,7 @@ const Header = (initialUser) => {
   const handleLogout = async () => {
     try {
       console.log("Logging out...");
-      await axios.post("http://localhost:8081/api/auth/logout");
+      await logoutUser(); 
       console.log("Server logout request done!");
       
       console.log("Dispatched Redux logout action!");

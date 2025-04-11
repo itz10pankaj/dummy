@@ -18,6 +18,3 @@ server/build/
 .DS_Store
 
 # MongoDB dump
-
-*.bson
-*.json

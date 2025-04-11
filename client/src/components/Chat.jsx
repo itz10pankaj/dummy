@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { io } from "socket.io-client";
-import axios from "axios"
-const socket = io("http://localhost:8081", { withCredentials: true });
-
+// const socket = io("http://localhost:8081", { withCredentials: true });
+const socket = io(import.meta.env.VITE_SOCKET_URL, { withCredentials: true });
+import { fetchMessages,uploadFile,getUsers } from "../services/apiServices";
 const Chat = ({ initialUser }) => {
 
     const user = initialUser;
@@ -50,27 +50,18 @@ const Chat = ({ initialUser }) => {
         formData.append("senderId", user.id);
         formData.append("receiverId", selectedUser);
 
-        try {
-            const res = await axios.post("http://localhost:8081/api/attach", formData, {
-                headers: {
-                    "Content-Type": "multipart/form-data",
-                },
-            });
-
-            const messageData = res.data.data;
-            
-
+        const uploaded = await uploadFile(formData);
+        if (uploaded) {
             socket.emit("sendMessage", {
                 senderId: user.id,
                 receiverId: selectedUser,
-                file: messageData.file,
+                file: uploaded.file,
             });
-            setMessages((prev) => ({
+
+            setMessages(prev => ({
                 ...prev,
-                [selectedUser]: [...(prev[selectedUser] || []), messageData],
+                [selectedUser]: [...(prev[selectedUser] || []), uploaded],
             }));
-        } catch (err) {
-            console.error("Error uploading file", err);
         }
     };
 
@@ -80,8 +71,9 @@ const Chat = ({ initialUser }) => {
     useEffect(() => {
         const fetchUsers = async () => {
             try {
-                const res = await fetch("http://localhost:8081/api/auth/user");
-                const data = (await res.json()).data;
+                const res = await getUsers();
+                const data = res.data;
+
                 const filtered = data.filter((u) => u.id !== user.id);
                 setUserList(filtered);
             } catch (err) {
@@ -110,23 +102,16 @@ const Chat = ({ initialUser }) => {
     }, [user.id]);
 
     useEffect(() => {
-        const fetchMessages = async () => {
+        const loadMessages = async () => {
             if (!selectedUser) return;
-            try {
-                const res = await fetch(
-                    `http://localhost:8081/api/chat-history?user1=${user.id}&user2=${selectedUser}`
-                );
-                const data = await res.json();
-                setMessages((prev) => ({
-                    ...prev,
-                    [selectedUser]: data,
-                }));
-            } catch (err) {
-                console.error("Failed to fetch chat history", err);
-            }
+            const chats = await fetchMessages(user.id, selectedUser);
+            setMessages(prev => ({
+                ...prev,
+                [selectedUser]: chats,
+            }));
         };
 
-        fetchMessages();
+        loadMessages();
     }, [selectedUser]);
 
     useEffect(() => {

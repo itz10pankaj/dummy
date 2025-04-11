@@ -1,11 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import axios from "axios";
 import { setCourses } from "../redux/slices/courseSlice";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { encryptID, decryptID } from "../services/UrlEncode";
 import AddCourseModal from "../modals/addCourseModal";
-
+import { getCourses } from "../services/apiServices";
 const Courses = ({ initialCourses }) => {
     const dispatch = useDispatch();
     const [courses, setLocalCourses] = useState(initialCourses || []); // Use initialCourses for SSR
@@ -18,14 +17,9 @@ const Courses = ({ initialCourses }) => {
     useEffect(() => {
         if (!initialCourses || initialCourses.length === 0) {
             const fetchCourses = async () => {
-                try {
-                    console.log("API CALL GYI HAI 1");
-                    const response = await axios.get("http://localhost:8081/api/courses");
-                    setLocalCourses(response.data.data);
-                    dispatch(setCourses(response.data.data));
-                } catch (err) {
-                    console.error("Error fetching courses:", err);
-                }
+                const courses = await getCourses(user);
+                setLocalCourses(courses);
+                dispatch(setCourses(courses));
             };
 
             fetchCourses();

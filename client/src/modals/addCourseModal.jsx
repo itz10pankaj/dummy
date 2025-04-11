@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useDispatch } from "react-redux";
 import { addCourse } from "../redux/slices/courseSlice";
+import { getCourses,addCourseApi } from "../services/apiServices";
 const AddCourseModal = ({ closeModal,updateCourses }) => {
   const dispatch = useDispatch();
   const [courses, setCourses] = useState([]);
@@ -13,8 +13,9 @@ const AddCourseModal = ({ closeModal,updateCourses }) => {
   useEffect(() => {
     const fetchCourses = async () => {
       try {
-        const res = await axios.get("http://localhost:8081/api/courses");
-        setCourses(res.data.data);
+        const courses = await getCourses(true);
+        console.log(courses);
+        setCourses(courses);
       } catch (error) {
         console.error("Error fetching courses:", error);
       }
@@ -42,10 +43,10 @@ const AddCourseModal = ({ closeModal,updateCourses }) => {
 
     try {
         // Send request to add a new course
-        const response = await axios.post("http://localhost:8081/api/courses", {
-            name: courseName,
-        });
-
+        // const response = await axios.post("http://localhost:8081/api/courses", {
+        //     name: courseName,
+        // });
+        const newCourse=await  addCourseApi({ name: courseName });
         // Success message
         toast.success("Course added successfully!", {
             position: "top-right",
@@ -54,8 +55,8 @@ const AddCourseModal = ({ closeModal,updateCourses }) => {
 
         // Update course list
         // setCourses((prevCourses) => [...prevCourses, response.data.data]);
-        updateCourses((prevCourses) => [...prevCourses, response.data.data]);
-        dispatch(addCourse(response.data.data));
+        updateCourses((prevCourses) => [...prevCourses, newCourse]);
+        dispatch(addCourse(newCourse));
         // Reset input field
         setCourseName("");
 

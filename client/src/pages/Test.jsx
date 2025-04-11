@@ -3,16 +3,20 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   PieChart, Pie, Cell, Legend
 } from 'recharts';
-
+import { getLivedata } from '../services/apiServices';
 const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042'];
 
 const Test = () => {
   const [data, setData] = useState([]);
 
   const fetchLiveData = async () => {
-    const res = await fetch('http://localhost:8081/api/live-data');
-    const json = await res.json();
-    setData(json);
+
+    const res = await getLivedata();
+    if (res && res.data) {
+      setData(res.data);
+    } else {
+      console.error('Failed to fetch live data:', res);
+    }
   };
 
   useEffect(() => {

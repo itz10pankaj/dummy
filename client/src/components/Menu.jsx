@@ -1,11 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import axios from "axios";
 import { setMenus } from "../redux/slices/menuSlice";
 import { useSearchParams } from "react-router-dom";
 import { encryptID, decryptID } from "../services/UrlEncode";
 import AddMenuModal from "../modals/addMenuModal";
-
+import {getMenus} from "../services/apiServices";
 const Menus = ({ initialMenus }) => {
     const dispatch = useDispatch();
     const [menus, setLocalMenus] = useState(initialMenus || []); // Use initialMenus for SSR
@@ -23,8 +22,7 @@ const Menus = ({ initialMenus }) => {
         const fetchMenus = async () => {
             if (!courseId) return; // Skip if no course is selected
             try {
-                const response = await axios.get(`http://localhost:8081/api/menu/${courseId}`);
-                const menuData = response.data.data || []; // Ensure menuData is an array
+                const menuData = await getMenus(courseId);
                 // console.log("hii",response.data.data);
                 setLocalMenus(menuData); // Update local state
                 dispatch(setMenus({ courseId: decryptedCourseId, menus: menuData })); // Update Redux store

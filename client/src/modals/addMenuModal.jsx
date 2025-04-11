@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { encryptID } from "../services/UrlEncode";
 import { useDispatch } from "react-redux";
 import { setMenus } from "../redux/slices/menuSlice";
+import { getCourses,addMenuApi } from "../services/apiServices";
 const AddMenuModal = ({ closeModal,updateMenus,menus }) => {
     const [courses, setCourses] = useState([]);
     const [selectedCourse, setSelectedCourse] = useState("");
@@ -14,8 +14,9 @@ const AddMenuModal = ({ closeModal,updateMenus,menus }) => {
   useEffect(() => {
     const fetchCourses = async () => {
       try {
-        const res = await axios.get("http://localhost:8081/api/courses");
-        setCourses(res.data.data);
+        // const res = await axios.get("http://localhost:8081/api/courses");
+        const courses=await getCourses(true);
+        setCourses(courses);
       } catch (error) {
         console.error("Error fetching courses:", error);
       }
@@ -47,15 +48,15 @@ const AddMenuModal = ({ closeModal,updateMenus,menus }) => {
       const encryptedCourseId = encryptID(selectedCourse);
 
       // Send request to add a new menu
-      const response = await axios.post(`http://localhost:8081/api/menu/${encryptedCourseId}`, {
-        name: menuName,
-      });
-
+      // const response = await axios.post(`http://localhost:8081/api/menu/${encryptedCourseId}`, {
+      //   name: menuName,
+      // });
+      const response = await addMenuApi({ name: menuName }, encryptedCourseId);
       toast.success("Menu added successfully!", { position: "top-right", autoClose: 2000 });
 
       // Update menu list
-      updateMenus((prevMenus) => [...prevMenus, response.data.data]);
-      dispatch(setMenus({ courseId: selectedCourse, menus: [...menus, response.data.data] }))
+      updateMenus((prevMenus) => [...prevMenus, response]);
+      dispatch(setMenus({ courseId: selectedCourse, menus: [...menus, response] }))
       // Reset input fields
       setMenuName("");
       setSelectedCourse("");

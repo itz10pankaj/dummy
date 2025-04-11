@@ -1,9 +1,9 @@
 import React, { useState,useEffect } from "react";
-import axios from "axios";
 import { useDispatch } from "react-redux";
 import { setContents } from "../redux/slices/contentSlice";
 import CKEditorComponent from "../components/CKEditorComponent.jsx";
 import { decryptID } from "../services/UrlEncode.js";
+import { updateContentApi } from "../services/apiServices.js";
 const EditContentModal = ({ content, menuId, closeModal, updateContents }) => {
 
     const dispatch = useDispatch();
@@ -16,21 +16,23 @@ const EditContentModal = ({ content, menuId, closeModal, updateContents }) => {
             console.log("New content:", newContent);
     
             // Update content on the server
-            const response = await axios.put(
-                `http://localhost:8081/api/content/${menuId}/${content.id}`,
-                { text: newContent }
-            );
+            // const response = await axios.put(
+            //     `http://localhost:8081/api/content/${menuId}/${content.id}`,
+            //     { text: newContent }
+            // );
+            const updatedContent = await updateContentApi(menuId, content.id, newContent);
+
     
-            console.log("Updated content from server:", response.data);
+            // console.log("Updated content from server:", response.data);
     
             // Update local state in Content.jsx
             updateContents((prevContents) =>
-                prevContents.map((c) => (c.id === content.id ? response.data : c))
+                prevContents.map((c) => (c.id === content.id ? updatedContent : c))
             );
     
             // Update Redux store
             // dispatch(setContents({ [menuId]: response.data }));
-            dispatch(setContents({ [decryptedMenuId]: response.data }));
+            dispatch(setContents({ [decryptedMenuId]: updatedContent }));
             // console.log("Redux state should be updated now. Check Redux DevTools.");
             window.location.reload(); 
         

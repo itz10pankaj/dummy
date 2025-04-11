@@ -1,12 +1,11 @@
 import React, { useState,useEffect } from 'react';
 import { useNavigate, Link } from "react-router-dom";
 import { GoogleLogin } from '@react-oauth/google';
-import axios from 'axios';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useDispatch } from 'react-redux';
 import { login } from '../redux/slices/authSlice';
-
+import { registerUser,googleLoginUser } from '../services/apiServices';
 const Register = () => {
   const [values, setValues] = useState({
     name: '',
@@ -38,11 +37,13 @@ useEffect(() => {
     e.preventDefault();
 
     try {
-      const response = await axios.post('http://localhost:8081/api/auth/register', {...values,
+      const response = await registerUser({
+        ...values,
         latitude: location.latitude,
         longitude: location.longitude
       });
-      console.log("Registration Successful:", response.data);
+
+      // console.log("Registration Successful:", response.data);
       toast.success("Registration Successful!", { position: "top-right", autoClose: 2000 });
       setTimeout(() => navigate("/login"), 2000);
 
@@ -55,12 +56,12 @@ useEffect(() => {
   };
   const handleGoogleLoginSuccess = async (credentialResponse) => {
     try {
-      const response = await axios.post("http://localhost:8081/api/auth/google-login", {
-        token: credentialResponse.credential,
-        latitude: location.latitude,
-        longitude: location.longitude,
-      });
-      dispatch(login(response.data.user));
+      const response = await googleLoginUser({
+              token: credentialResponse.credential,
+              latitude: location.latitude,
+              longitude: location.longitude
+            });
+            dispatch(login(response.user));
       toast.success("Google Registered Successful!", { position: "top-right", autoClose: 2000 });
       setTimeout(() => {
         navigate("/home");

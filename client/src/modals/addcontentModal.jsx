@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { encryptID } from "../services/UrlEncode";
 import { useDispatch, useSelector } from "react-redux";
 import { setContents } from "../redux/slices/contentSlice";
 import CKEditorComponent from "../components/CKEditorComponent";
+import { getCourses,getMenus,addContentApi } from "../services/apiServices";
 const AddContentModal = ({ closeModal }) => {
   const dispatch = useDispatch();
   const contents = useSelector((state) => state.contents);
@@ -19,8 +19,8 @@ const AddContentModal = ({ closeModal }) => {
   useEffect(() => {
     const fetchCourses = async () => {
       try {
-        const res = await axios.get("http://localhost:8081/api/courses");
-        setCourses(res.data.data);
+        const courses= await getCourses(true);
+        setCourses(courses);
       } catch (error) {
         console.error("Error fetching courses:", error);
       }
@@ -39,8 +39,9 @@ const AddContentModal = ({ closeModal }) => {
   // Function to fetch menus based on the selected course
   const fetchMenus = async (courseId) => {
     try {
-      const res = await axios.get(`http://localhost:8081/api/menu/${encryptID(courseId)}`);
-      setMenus(res.data.data);
+      const encryptedCourseId = encryptID(courseId);
+      const res = await getMenus(encryptedCourseId);
+      setMenus(res);
       setMenuId(""); // Reset menu selection when course changes
     } catch (error) {
       console.error("Error fetching menus:", error);
@@ -60,11 +61,12 @@ const AddContentModal = ({ closeModal }) => {
 
     try {
       const encryptedMenuId = encryptID(menuId);
-      const response = await axios.post(`http://localhost:8081/api/content/${encryptedMenuId}`, {
-        text: content,
-      });
+      // const response = await axios.post(`http://localhost:8081/api/content/${encryptedMenuId}`, {
+      //   text: content,
+      // });
+      const response = await addContentApi(content,encryptedMenuId);
 
-      const newContent = response.data.data;
+      const newContent = response;
 
 
       // Update Redux store
