@@ -71,7 +71,7 @@ export async function getContents(menuId) {
 export async function addContentApi(content, encryptedMenuId) {
     if (!content) return null;
     try {
-        const res = await axios.post(`http://localhost:8081/api/content/${encryptedMenuId}`, {
+        const res = await axios.post(`${API_BASE}/content/${encryptedMenuId}`, {
             text: content,
         });
         return res.data?.data || null;
@@ -84,7 +84,7 @@ export async function addContentApi(content, encryptedMenuId) {
 
 export const updateContentApi = async (menuId, contentId, newContent) => {
     const res = await axios.put(
-        `http://localhost:8081/api/content/${menuId}/${contentId}`,
+        `${API_BASE}/content/${menuId}/${contentId}`,
         { text: newContent }
     );
     return res.data;

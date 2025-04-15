@@ -4,7 +4,12 @@ import dotenv from 'dotenv';
 import cookieParser from "cookie-parser";
 import http from "http";
 import { AppDataSource } from "./config/data-source.js"
+import fs from "fs";
 dotenv.config();
+
+const swaggerDocument = JSON.parse(fs.readFileSync('./swagger.json', 'utf-8'));
+import swaggerUi from 'swagger-ui-express';
+
 import { connectToMongo } from "./config/mogodb.js"
 import authRoutes from "./routes/authRouters.js"
 import courseRoute from "./routes/courseRoute.js"
@@ -26,9 +31,10 @@ app.use(cors({
     credentials: true
 }));
 app.use(cookieParser());
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 AppDataSource.initialize()
-    .then(() => console.log("Connected to MySQL with TypeORM"))
-    .catch(err => console.error("Database connection failed:", err));
+.then(() => console.log("Connected to MySQL with TypeORM"))
+.catch(err => console.error("Database connection failed:", err));
 
 const check = false;
 if (check) {

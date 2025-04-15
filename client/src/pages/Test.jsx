@@ -1,12 +1,27 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   PieChart, Pie, Cell, Legend
 } from 'recharts';
 import { getLivedata } from '../services/apiServices';
+import TestCom from '../components/TestCom.jsx';
 const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042'];
 
 const Test = () => {
+  const testComRef = useRef(null);
+  const parentFunction = () => {
+    alert('Hello from Parent Function!');
+  };
+  const handleShowAlert = () => {
+    if (testComRef.current) {
+      testComRef.current.showAlert();
+    }
+  }
+  useEffect(() => {
+    if (testComRef.current) {
+      testComRef.current.setParentFunction(parentFunction)
+    }
+  }, []);
   const [data, setData] = useState([]);
 
   const fetchLiveData = async () => {
@@ -36,8 +51,8 @@ const Test = () => {
   return (
     <div className="p-4 space-y-8">
       <h1 className="text-2xl font-bold">📈 Real-Time Dashboard</h1>
-
-      {/* Line Chart */}
+      {/*
+        // line chart
       <div>
         <h2 className="text-lg font-semibold mb-2">Live Line Chart</h2>
         <LineChart width={800} height={300} data={data}>
@@ -48,8 +63,7 @@ const Test = () => {
           <Line type="monotone" dataKey="value" stroke="#8884d8" dot={false} />
         </LineChart>
       </div>
-
-      {/* Pie Chart */}
+        // Pie chart and donut chart
       <div className="flex flex-wrap gap-12">
         <div>
           <h2 className="text-lg font-semibold mb-2">Category Pie Chart</h2>
@@ -72,7 +86,6 @@ const Test = () => {
           </PieChart>
         </div>
 
-        {/* Donut Chart */}
         <div>
           <h2 className="text-lg font-semibold mb-4">Donut Chart</h2>
           <PieChart width={400} height={300}>
@@ -95,6 +108,15 @@ const Test = () => {
           </PieChart>
         </div>
       </div>
+      */}
+      <button
+        onClick={handleShowAlert}
+        className="px-4 py-2 bg-blue-500 text-white rounded-lg"
+      >
+        Show Alert from TestCom
+      </button>
+      
+      <TestCom ref={testComRef} />
     </div>
   );
 };
