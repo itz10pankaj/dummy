@@ -5,11 +5,7 @@ import cookieParser from "cookie-parser";
 import http from "http";
 import { AppDataSource } from "./config/data-source.js"
 import fs from "fs";
-dotenv.config();
-
-const swaggerDocument = JSON.parse(fs.readFileSync('./swagger.json', 'utf-8'));
 import swaggerUi from 'swagger-ui-express';
-
 import { connectToMongo } from "./config/mogodb.js"
 import authRoutes from "./routes/authRouters.js"
 import courseRoute from "./routes/courseRoute.js"
@@ -21,8 +17,17 @@ import locationRoute from "./routes/LocationRoute.js"
 import { initSocket } from "./config/socket.js";
 import chatRoutes from "./routes/chatRoutes.js";
 import { responseHandler } from "./utlis/responseHandler.js";
+import { ApolloServer } from "apollo-server-express";
+import { GraphQLUpload, graphqlUploadExpress } from 'graphql-upload';
+import { typeDefs } from "./graphql/UserSchema.js";
+import { resolvers } from "./graphql/Userresolvers.js";
+dotenv.config();
 const app = express();
 const httpServer=http.createServer(app);
+const server=new ApolloServer({
+    typeDefs,
+    resolvers
+})
 initSocket(httpServer);
 connectToMongo();
 app.use(express.json());
@@ -31,11 +36,13 @@ app.use(cors({
     credentials: true
 }));
 app.use(cookieParser());
+const swaggerDocument = JSON.parse(fs.readFileSync('./swagger.json', 'utf-8'));
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
-AppDataSource.initialize()
-.then(() => console.log("Connected to MySQL with TypeORM"))
-.catch(err => console.error("Database connection failed:", err));
 
+await AppDataSource.initialize()
+app.use(graphqlUploadExpress());
+await server.start();
+server.applyMiddleware({app})
 const check = false;
 if (check) {
     app.get('/api/live-data', async (req, res) => {
@@ -70,7 +77,6 @@ if (check) {
     setInterval(insertData, 5000);
 
 }
-
 
 
 app.get('/api/meta-title', getMetaData);

@@ -42,6 +42,10 @@ export const User = new EntitySchema({
         longitude: {
             type: "varchar",
             nullable: true,
+        },
+        profilePic:{
+            type: "varchar",
+            nullable: true,
         }
     },
 });
