@@ -5,6 +5,7 @@ import { useSearchParams } from "react-router-dom";
 import { encryptID, decryptID } from "../services/UrlEncode";
 import AddMenuModal from "../modals/addMenuModal";
 import {getMenus} from "../services/apiServices";
+
 const Menus = ({ initialMenus }) => {
     const dispatch = useDispatch();
     const [menus, setLocalMenus] = useState(initialMenus || []); // Use initialMenus for SSR

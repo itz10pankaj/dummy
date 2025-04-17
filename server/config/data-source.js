@@ -8,6 +8,9 @@ import { Content } from "../models/Content.js";
 import { Image } from "../models/Images.js";
 import { MetaTitle } from "../models/MetaTitle.js";
 import { Location } from "../models/Location.js";
+import { Category } from "../models/Categories.js";
+import { Item } from "../models/Items.js";
+import { Photo } from "../models/Item_Photos.js";
 import { ChangeLogger } from "../dist/suscriber.js";
 import { CacheInvalidationSubscriber } from "../utlis/Cache-invalidatoin.js";
 dotenv.config();
@@ -20,7 +23,7 @@ export const AppDataSource = new DataSource({
     database: process.env.DB_NAME,
     synchronize: true,  
     logging: true,
-    entities: [User,Menu,Content,Course,Image,MetaTitle,Location],
+    entities: [User,Menu,Content,Course,Image,MetaTitle,Location,Category,Item,Photo],
     subscribers: [CacheInvalidationSubscriber,ChangeLogger
     ],
 });

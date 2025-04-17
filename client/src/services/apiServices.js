@@ -222,3 +222,81 @@ export const getUsers=async()=>{
         return [];
     }
 }
+
+
+export const getCategories = async () => {
+    try {
+        const res = await axios.get(`${API_BASE}/categories`);
+        return res.data?.data || [];
+    } catch (err) {
+        console.error("Error fetching categories:", err);
+        return [];
+    }
+}
+export const addCategoryApi = async (category) => {
+    try {
+        const res = await axios.post(`${API_BASE}/categories`, category);
+        return res.data?.data || null;
+    } catch (err) {
+        console.error("Error adding category:", err);
+        return null;
+    }
+}
+export const getItems = async (categoryId) => {
+    try {
+        const res = await axios.get(`${API_BASE}/items/${categoryId}`);
+        return res.data?.data || [];
+    } catch (err) {
+        console.error("Error fetching items:", err);
+        return [];
+    }
+}
+
+export const addItemApi = async (categoryId, itemData) => {
+    try {
+        const res = await axios.post(`${API_BASE}/items/${categoryId}`, itemData);
+        return res.data?.data || null;
+    } catch (err) {
+        console.error("Error adding item:", err);
+        return null;
+    }
+};
+
+export const getphotos=async(itemId)=>{
+    try {
+        const res = await axios.get(`${API_BASE}/photos/${itemId}`);
+        return res.data?.data || [];
+    } catch (err) {
+        console.error("Error fetching photos:", err);
+        return [];
+    }
+}
+export const addPhotoApi = async ( formData) => {
+    try {
+        const res = await axios.post(`${API_BASE}/photoUpload`, formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        });
+        
+        if (res.data.data?.uploaded) {
+            return res.data.data.photos; 
+        }
+        throw new Error(res.data.message || "Failed to upload images");
+    } catch (err) {
+        console.error("Error adding photo:", err);
+        throw err;
+    }
+};
+
+
+
+export const addBulkApi = async ( formData) => {
+    try {
+        const res = await axios.post(`${API_BASE}/bulk-upload`, formData);
+        return res.data?.data || [];
+    } catch (err) {
+        console.error("Error adding item:", err);
+        return null;
+    }
+};

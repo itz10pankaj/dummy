@@ -12,10 +12,14 @@ import courseRoute from "./routes/courseRoute.js"
 import menuRoute from "./routes/menuRoutes.js"
 import contentRoute from "./routes/contentRoute.js"
 import imageRoute from "./routes/imageRoutes.js"
+import categoryRoute from "./routes/categoriesRoute.js"
+import itemsRoute from "./routes/ItemsRoutes.js"
+import photosRoute from "./routes/photoRoutes.js"
 import { getMetaData } from "./controllers/getMetaDataController.js";
 import locationRoute from "./routes/LocationRoute.js"
 import { initSocket } from "./config/socket.js";
 import chatRoutes from "./routes/chatRoutes.js";
+
 import { responseHandler } from "./utlis/responseHandler.js";
 import { ApolloServer } from "apollo-server-express";
 import { GraphQLUpload, graphqlUploadExpress } from 'graphql-upload';
@@ -40,9 +44,9 @@ const swaggerDocument = JSON.parse(fs.readFileSync('./swagger.json', 'utf-8'));
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 await AppDataSource.initialize()
-app.use(graphqlUploadExpress());
-await server.start();
-server.applyMiddleware({app})
+// app.use(graphqlUploadExpress());
+// await server.start();
+// server.applyMiddleware({app,path: '/graphql'})
 const check = false;
 if (check) {
     app.get('/api/live-data', async (req, res) => {
@@ -87,12 +91,17 @@ app.use("/api/", contentRoute)
 app.use("/api/", imageRoute);
 app.use("/api/", locationRoute);
 app.use("/api", chatRoutes);
+app.use("/api/", categoryRoute);
+app.use("/api/", itemsRoute);
+app.use("/api/", photosRoute);
 app.use((req, res, next) => {
     console.log(`Request received: ${req.method} ${req.url}`);
     next();
 });
 app.use("/uploads", express.static("uploads"));
+app.use("/photoUpload", express.static("uploads"));
 app.use("/attach", express.static("uploads"));
+// app.use("/uploads/graphql", express.static("uploads/graphql"));
 
 const PORT = process.env.PORT || 8081;
 

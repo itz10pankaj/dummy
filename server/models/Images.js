@@ -20,10 +20,7 @@ export const Image = new EntitySchema({
             type:"timestamp",
             createDate:true,
         },
-        createdAt:{
-            type:"timestamp",
-            createDate:true,
-        },
+
         status:{
             type:"bool",
             default:true

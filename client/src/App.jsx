@@ -9,6 +9,7 @@ import { login } from './redux/slices/authSlice';
 import "./styles/global.scss"
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { setCourses } from './redux/slices/courseSlice';
+import { setCategories } from './redux/slices/categorySlice';
 function App({ initialData }) {
   const dispatch = useDispatch();
   const reduxUser = useSelector((state) => state.auth.user);
@@ -41,7 +42,10 @@ function App({ initialData }) {
     }
     if (initialData?.courses) {
       dispatch(setCourses(initialData.courses));
-  }
+    }
+    if(initialData?.categories){
+      dispatch(setCategories(initialData.categories))
+    }
   }, [reduxUser, dispatch, initialData]);
 
   return (

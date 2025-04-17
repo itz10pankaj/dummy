@@ -17,7 +17,7 @@ export const responseHandler={
      });
   },
 
-  notFound: (res, message = "Resource not found",statusCode=404) => {
+  badRequest: (res, message = "Resource not found",statusCode=404) => {
     return res.status(statusCode).json({ 
         status: "error", 
         message 

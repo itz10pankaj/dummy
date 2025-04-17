@@ -39,7 +39,18 @@ const Header = (initialUser) => {
       navigate("/contact", { replace: true });
     }
   }
-
+  const handleDetail= () => {
+    if (location.pathname === "/home") {
+      navigate("/deatils", { replace: true });
+    } else {
+      navigate("/home", { replace: true });
+    }
+  }
+  const handleNavigate = (path) => {
+    if (location.pathname !== path) {
+      navigate(path, { replace: true });
+    }
+  };
   return (
     <header className="header">
     <h1>My App</h1>
@@ -48,9 +59,30 @@ const Header = (initialUser) => {
       <button  onClick={handleLogout} className="logout">
         Logout
       </button>
-      <button  onClick={handleContact} className="upload">
-         {location.pathname === "/contact" ? "Home" : "Contact"}
-      </button>
+      {location.pathname !== "/home" && (
+          <button
+            onClick={() => handleNavigate("/home")}
+            className="upload"
+          >
+            Home
+          </button>
+        )}
+        {location.pathname !== "/contact" && (
+          <button
+            onClick={() => handleNavigate("/contact")}
+            className="upload"
+          >
+            Contact
+          </button>
+        )}
+        {location.pathname !== "/details" && (
+          <button
+            onClick={() => handleNavigate("/details")}
+            className="upload"
+          >
+            Detail
+          </button>
+        )}
     </div>
     
   </header>

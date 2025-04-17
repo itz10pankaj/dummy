@@ -23,6 +23,8 @@ const fileFilter = (req, file, cb) => {
 
 const upload = multer({ storage, fileFilter });
 const attach=multer({storage})
+const addPhoto=multer({storage})
 export const uploadMiddleware = upload.single("image");
 export const attackMiddleware = attach.single("file");
+export const addPhotoMiddleware=addPhoto.array("files")
 // export default upload;

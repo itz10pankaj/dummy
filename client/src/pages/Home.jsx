@@ -15,8 +15,6 @@ const Home = ({ initialData }) => {
   const location = useLocation();
   const { t, i18n } = useTranslation();
 
-  // const selectedCourse = params.get("course") || initialData?.selectedCourse || null;
-// const selectedMenu = params.get("menu") || initialData?.selectedMenu || null;
   const [selectedCourse, setSelectedCourse] = useState(initialData?.selectedCourse || null);
   const [selectedMenu, setSelectedMenu] = useState(initialData?.selectedMenu || null);
   const [menus, setMenus] = useState(initialData?.menus || []);
