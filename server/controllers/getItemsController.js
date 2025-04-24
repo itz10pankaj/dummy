@@ -7,6 +7,11 @@ import { responseHandler } from "../utlis/responseHandler.js";
 import fs from "fs"
 import path from "path"
 import csv from "csv-parser"
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 
 const getItemsByCategoryId = async (categoryId) => {
     return await AppDataSource.getRepository(Item).find({
@@ -68,7 +73,21 @@ export const addItem = async (req, res) => {
             where: { id: decryptedCategoryId },
         });
         if (!category) {
-            return responseHandler.notFound(res, "Category not found", 404);
+            return responseHandler.badRequest(res, "Category not found", 404);
+        }
+        const existing = await itemRepository.findOne({
+          where: {
+            name: name,
+            latitude: latitude,
+            longitude: longitude,
+            category: { id: category.id },
+          },
+          relations: ["category"],
+        });
+    
+        // ✅ If item already exists
+        if (existing) {
+          return responseHandler.badRequest(res,"Item already exists", 409);
         }
         const newItem = itemRepository.create({
             name,
@@ -83,6 +102,7 @@ export const addItem = async (req, res) => {
         })
         await redisClient.setex(`Items:${decryptedCategoryId}`, 3600, JSON.stringify(updatedItems));
         return responseHandler.success(res, newItem, "Item added successfully", 201);
+      
     }
     catch (err) {
         console.error("Error adding item:", err);
@@ -94,54 +114,113 @@ export const addItem = async (req, res) => {
 
 export const bulkUploadItems = async (req, res) => {
     try {
-        const { categoryId } = req.body;
-        const latitude = req.body.latitude;
-        const longitude = req.body.longitude;
-        const decryptedCategoryId = decryptID(categoryId);
-        if (!categoryId || !latitude || !longitude) {
-            return responseHandler.badRequest(res, "Category ID and location required", 400);
-        }
-
-        const categoryRepository = AppDataSource.getRepository(Category);
-        const itemRepository = AppDataSource.getRepository(Item);
-
-        const category = await categoryRepository.findOne({
-            where: { id: decryptedCategoryId },
+      const latitude = req.body.latitude;
+      const longitude = req.body.longitude;
+      if (!latitude || !longitude) {
+        return responseHandler.badRequest(res, "Location is required", 400);
+      }
+      if (!req.file) {
+        return responseHandler.badRequest(res, "CSV file not found", 400);
+      }
+      const itemsToInsert = [];
+      let categoryIdFromCSV = null;
+      const filePath = path.resolve(req.file.path);
+  
+      // Read CSV
+      fs.createReadStream(filePath)
+        .pipe(csv())
+        .on("data", (row) => {
+          if (row.name && row.categoryId) {
+            categoryIdFromCSV = row.categoryId.trim();
+            itemsToInsert.push({
+              name: row.name.trim(),
+              latitude,
+              longitude,
+              categoryId: categoryIdFromCSV
+            });
+          }
         })
-        if (!category) {
+        .on("end", async () => {
+          const categoryRepository = AppDataSource.getRepository(Category);
+          const itemRepository = AppDataSource.getRepository(Item);
+  
+          const category = await categoryRepository.findOne({
+            where: { id: categoryIdFromCSV },
+          });
+  
+          if (!category) {
             return responseHandler.badRequest(res, "Category not found", 404);
-        }
-
-        if (!req.file) {
-            return responseHandler.badRequest(res, "CSV file not found", 400);
-        }
-
-        const itemsToInsert = [];
-        const filePath = path.resolve(req.file.path);
-        fs.createReadStream(filePath)
-            .pipe(csv())
-            .on("data", (row) => {
-                if (row.name) {
-                    itemsToInsert.push({
-                        name: row.name.trim(),
-                        latitude,
-                        longitude,
-                        category,
-                    });
-                }
-            })
-            .on("end", async () => {
-                await itemRepository.save(itemsToInsert);
-                fs.unlinkSync(filePath);
-                const updatedItems = await itemRepository.find({
-                    where: { category: { id: decryptedCategoryId } },
-                    relations: ["category"],
-                })
-                await redisClient.setex(`Items:${decryptedCategoryId}`, 3600, JSON.stringify(updatedItems));
-                return responseHandler.success(res, itemsToInsert, "Item added successfully", 201);
-            })
+          }
+  
+          const insertedItems = [];
+          const duplicateItems = [];
+  
+          for (const item of itemsToInsert) {
+            // Assign relation
+            item.category = category;
+  
+            const existing = await itemRepository.findOne({
+              where: {
+                name: item.name,
+                latitude: item.latitude,
+                longitude: item.longitude,
+                category: { id: category.id },
+              },
+              relations: ["category"],
+            });
+  
+            if (existing) {
+              duplicateItems.push({ ...item, status: "Duplicate" });
+            } else {
+              insertedItems.push(item);
+            }
+          }
+  
+          if (insertedItems.length > 0) {
+            await itemRepository.save(insertedItems);
+  
+            const updatedItems = await itemRepository.find({
+              where: { category: { id: category.id } },
+              relations: ["category"],
+            });
+  
+            await redisClient.setex(
+              `Items:${category.id}`,
+              3600,
+              JSON.stringify(updatedItems)
+            );
+          }
+  
+          // Remove uploaded file
+          fs.unlinkSync(filePath);
+  
+          // Combine inserted + duplicate with status
+          const allResults = [
+            ...insertedItems.map((i) => ({ ...i, status: "Inserted" })),
+            ...duplicateItems,
+          ];
+  
+          // CSV output
+          const csvString = [
+            ["name", "latitude", "longitude", "status"],
+            ...allResults.map((item) => [
+              item.name,
+              item.latitude,
+              item.longitude,
+              item.status,
+            ]),
+          ]
+            .map((row) => row.join(","))
+            .join("\n");
+  
+          // Send as downloadable CSV
+          res.setHeader("Content-disposition", `attachment; filename=result.csv`);
+          res.setHeader("Content-Type", "text/csv");
+          res.status(201).send(csvString);
+        });
     } catch (err) {
-        console.error("bulk error", err);
-        return responseHandler.error(res, err, "Server Error", 500);
+      console.error("bulk error", err);
+      return responseHandler.error(res, err, "Server Error", 500);
     }
-}
+  };
+  

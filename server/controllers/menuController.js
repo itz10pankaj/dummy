@@ -66,7 +66,7 @@ export const addMenu = async (req, res) => {
         const existingCourse = await courseRepository.findOne({ where: { id: decryptedCourseId } });
         if (!existingCourse) {
             // return res.status(404).json({ message: "Course not found" });
-            return responseHandler.notFound(res, "Course not found", 404);
+            return responseHandler.badRequest(res, "Course not found", 404);
         }
 
         // Create new menu item

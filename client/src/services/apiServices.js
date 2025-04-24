@@ -1,5 +1,34 @@
 // src/api/courseApi.js
 import axios from "axios";
+axios.interceptors.response.use(
+    response => response,
+    error => {
+      if (error.response) {
+        // Server responded with a status code outside 2xx
+        return Promise.reject({
+          message: error.response.data?.message || error.message,
+          status: error.response.status,
+          data: error.response.data
+        });
+      } else if (error.request) {
+        // Request was made but no response received
+        return Promise.reject({
+          message: "No response from server",
+          status: 0
+        });
+      }
+      // Something happened in setting up the request
+      return Promise.reject({
+        message: error.message,
+        status: -1
+      });
+    }
+  );
+  
+  // Helper function to handle API responses consistently
+  const handleResponse = (response) => {
+    return response.data?.data ?? response.data;
+  };
 
 const API_BASE = "http://localhost:8081/api";
 
@@ -227,7 +256,8 @@ export const getUsers=async()=>{
 export const getCategories = async () => {
     try {
         const res = await axios.get(`${API_BASE}/categories`);
-        return res.data?.data || [];
+        // return res.data?.data || [];
+        return handleResponse(res) || [];
     } catch (err) {
         console.error("Error fetching categories:", err);
         return [];
@@ -236,29 +266,35 @@ export const getCategories = async () => {
 export const addCategoryApi = async (category) => {
     try {
         const res = await axios.post(`${API_BASE}/categories`, category);
-        return res.data?.data || null;
+        // return res.data?.data || null;
+        return handleResponse(res);
     } catch (err) {
         console.error("Error adding category:", err);
-        return null;
+        // return null;
+        throw err;
     }
 }
 export const getItems = async (categoryId) => {
     try {
         const res = await axios.get(`${API_BASE}/items/${categoryId}`);
-        return res.data?.data || [];
+        // return res.data?.data || [];
+        return handleResponse(res) || [];
     } catch (err) {
         console.error("Error fetching items:", err);
         return [];
+
     }
 }
 
 export const addItemApi = async (categoryId, itemData) => {
     try {
         const res = await axios.post(`${API_BASE}/items/${categoryId}`, itemData);
-        return res.data?.data || null;
+        // return res.data?.data || null;
+        return handleResponse(res);
     } catch (err) {
         console.error("Error adding item:", err);
-        return null;
+        // return null;
+        throw err;
     }
 };
 
@@ -291,12 +327,35 @@ export const addPhotoApi = async ( formData) => {
 
 
 
-export const addBulkApi = async ( formData) => {
+
+export const addBulkApi = async (formData) => {
     try {
-        const res = await axios.post(`${API_BASE}/bulk-upload`, formData);
+      const res = await axios.post(`${API_BASE}/bulk-upload`, formData, {
+        responseType: "blob" // CSV is returned as blob
+      });
+      return res.data; // blob return karega
+    } catch (err) {
+      console.error("Error uploading bulk CSV:", err);
+      return null;
+    }
+  };
+  
+export const addUserLogApi = async (logData) => {
+    try {
+        const res = await axios.post(`${API_BASE}/add`, logData);
+        return res.data?.data || null;
+    } catch (err) {
+        console.error("Error adding user log:", err);
+        return null;
+    }
+};
+
+export const getUserLogsApi = async (userId) => {
+    try {
+        const res = await axios.post(`${API_BASE}/get`, { userId });
         return res.data?.data || [];
     } catch (err) {
-        console.error("Error adding item:", err);
-        return null;
+        console.error("Error fetching user logs:", err);
+        return [];
     }
 };

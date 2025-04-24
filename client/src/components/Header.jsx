@@ -32,20 +32,6 @@ const Header = (initialUser) => {
       console.error("Error during logout:", error);
     }
   };
-  const handleContact= () => {
-    if (location.pathname === "/contact") {
-      navigate("/home", { replace: true });
-    } else {
-      navigate("/contact", { replace: true });
-    }
-  }
-  const handleDetail= () => {
-    if (location.pathname === "/home") {
-      navigate("/deatils", { replace: true });
-    } else {
-      navigate("/home", { replace: true });
-    }
-  }
   const handleNavigate = (path) => {
     if (location.pathname !== path) {
       navigate(path, { replace: true });

@@ -48,4 +48,11 @@ export const User = new EntitySchema({
             nullable: true,
         }
     },
+    relations: {
+        logs: {
+            target: "UserLogs",
+            type: "one-to-many",
+            inverseSide: "userlogged",
+        },
+    },
 });

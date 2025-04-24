@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from "react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { useDispatch } from "react-redux";
+import { useDispatch,useSelector } from "react-redux";
 import {addCategory} from "../redux/slices/categorySlice"
-import { getCategories,addCategoryApi } from "../services/apiServices";
+import { getCategories,addCategoryApi,addUserLogApi } from "../services/apiServices";
+import { setLogs } from "../redux/slices/logsSLice";
 const AddCategoryModal = ({ closeModal,updateCategories }) => {
   const dispatch = useDispatch();
+  const user= useSelector((state) => state.auth.user);
+  console.log(user);
   const [categories, setCategories] = useState([]);
   const [categoryName, setcategoryName] = useState([]);
-
+  const logsFromStore=useSelector((state)=>state.logs.userId)
   // Fetch courses when the component mounts
   useEffect(() => {
     const fetchCategories = async () => {
@@ -36,7 +39,7 @@ const AddCategoryModal = ({ closeModal,updateCategories }) => {
     if (!categoryName.trim()) {
         toast.error("Please enter a valid course name.", {
             position: "top-right",
-            autoClose: 2000,
+            autoClose: 1000,
         });
         return;
     }
@@ -46,11 +49,16 @@ const AddCategoryModal = ({ closeModal,updateCategories }) => {
         // Success message
         toast.success("Category added successfully!", {
             position: "top-right",
-            autoClose: 2000,
+            autoClose: 1000,
         });
-
+        const log = await addUserLogApi({
+          userId: user?.id,  
+          action: `Added category: ${newCategory.name}`,
+          status:true
+        });
         updateCategories((prevCategories) => [...prevCategories, newCategory]);
         dispatch(addCategory(newCategory));
+        dispatch(setLogs({ userId: [log,...logsFromStore] }));
         // Reset input field
         setcategoryName("");
 
@@ -58,14 +66,34 @@ const AddCategoryModal = ({ closeModal,updateCategories }) => {
         setTimeout(() => {
             closeModal();
         }, 1000);
-
+        
     } catch (error) {
-        console.error("Error adding course:", error);
-        toast.error("Failed to add course. Try again later.", {
-            position: "top-right",
-            autoClose: 2000,
-        });
-    }
+      console.error("Error adding course:", error);
+      
+      if (error.response && error.response.status === 400) {
+          toast.error(error.response.data.message || "Category already exists", {
+              position: "top-right",
+              autoClose: 1000,
+          });
+          setTimeout(() => {
+            closeModal();
+        }, 1000);
+      } else {
+          const log = await addUserLogApi({
+            userId: user?.id,  
+            action: "Category Add failed",
+            status: false
+          });
+          dispatch(setLogs({ userId: [log, ...logsFromStore] }));
+          toast.error("Failed to add category. Try again later.", {
+              position: "top-right",
+              autoClose: 1000,
+          });
+          setTimeout(() => {
+            closeModal();
+        }, 1000);
+      }
+  }
 };
 
 

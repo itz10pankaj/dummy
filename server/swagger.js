@@ -18,6 +18,7 @@ const endpoints=[
     "./routes/categoriesRoute.js",
     "./routes/ItemsRoutes.js",
     "./routes/photoRoutes.js",
+    "./routes/logsRoutes.js"
 ]
 
 swaggerAutogen()(output, endpoints, doc)

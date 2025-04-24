@@ -11,7 +11,9 @@ import { Location } from "../models/Location.js";
 import { Category } from "../models/Categories.js";
 import { Item } from "../models/Items.js";
 import { Photo } from "../models/Item_Photos.js";
+import { UserLogs } from "../models/logs.js";
 import { ChangeLogger } from "../dist/suscriber.js";
+import { Template } from "../models/Template.js";
 import { CacheInvalidationSubscriber } from "../utlis/Cache-invalidatoin.js";
 dotenv.config();
 export const AppDataSource = new DataSource({
@@ -23,7 +25,7 @@ export const AppDataSource = new DataSource({
     database: process.env.DB_NAME,
     synchronize: true,  
     logging: true,
-    entities: [User,Menu,Content,Course,Image,MetaTitle,Location,Category,Item,Photo],
+    entities: [User,Menu,Content,Course,Image,MetaTitle,Location,Category,Item,Photo,UserLogs,Template],
     subscribers: [CacheInvalidationSubscriber,ChangeLogger
     ],
 });

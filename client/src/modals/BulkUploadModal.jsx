@@ -1,21 +1,23 @@
 import { useState } from "react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { addBulkApi } from "../services/apiServices";
+import { addBulkApi, addUserLogApi } from "../services/apiServices";
 import { setItems } from "../redux/slices/itemsSlice";
+import { setLogs } from "../redux/slices/logsSLice";
 import { useDispatch, useSelector } from "react-redux";
+import Papa from "papaparse";
 const BulkUploadForm = ({ encryptedCategoryId, updateItems }) => {
   const dispatch = useDispatch();
   const [file, setFile] = useState(null);
   const items = useSelector((state) => state.items.items);
   const [isLoading, setIsLoading] = useState(false);
-
-
+  const user = useSelector((state) => state.auth.user);
+  const logsFromStore = useSelector((state) => state.logs.userId)
   const handleUpload = async () => {
     if (!file) {
       toast.error("Please select a CSV file first!", {
         position: "top-right",
-        autoClose: 2000
+        autoClose: 1000
       });
       return;
     }
@@ -27,31 +29,73 @@ const BulkUploadForm = ({ encryptedCategoryId, updateItems }) => {
 
       const formData = new FormData();
       formData.append("file", file);
-      formData.append("categoryId", encryptedCategoryId);
       formData.append("latitude", position.coords.latitude);
       formData.append("longitude", position.coords.longitude);
+      const blob = await addBulkApi(formData);
 
-      const response = await addBulkApi(formData);
-      const newItems = response;
-      updateItems((prevItems) => [...prevItems, ...newItems]);
+      if (!blob) {
+        throw new Error("No CSV data received");
+      }
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", "uploaded-items.csv");
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      const text = await blob.text();
 
-      // Update Redux store
-      dispatch(setItems({
-        categoryId: encryptedCategoryId,
-        items: [...items, ...newItems]
-      }));
-      setFile(null);
-      toast.success(`${newItems.length} items added successfully!`, {
-        position: "top-right",
-        autoClose: 2000
+      // Parse CSV
+      const parsed = Papa.parse(text, {
+        header: true,
+        skipEmptyLines: true
       });
+
+      const newItems = parsed.data.filter(item => item.status === "Inserted");
+      updateItems((prevItems) => [...prevItems, ...newItems]);
+      if (newItems.length > 0) {
+        dispatch(setItems({
+          categoryId: encryptedCategoryId,
+          items: [...items, ...newItems]
+        }));
+        toast.success(`${newItems.length} items added successfully!`, {
+          position: "top-right",
+          autoClose: 1000
+        });
+        const log = await addUserLogApi({
+          userId: user?.id,
+          action: `Bulk Items Added`,
+          status: true
+        });
+        dispatch(setLogs({ userId: [log, ...logsFromStore] }));
+      }
+      else {
+        toast.error("Duplicate Items", {
+          position: "top-right",
+          autoClose: 1000
+        });
+        const log = await addUserLogApi({
+          userId: user?.id,
+          action: `Duplicate Items`,
+          status: false
+        });
+        dispatch(setLogs({ userId: [log, ...logsFromStore] }));
+        
+      }
 
 
     } catch (error) {
       console.error("Upload failed:", error);
+      const log = await addUserLogApi({
+        userId: user?.id,
+        action: "Bulk item addition failed",
+        status: false
+      });
+      dispatch(setLogs({ userId: [log, ...logsFromStore] }));
       toast.error(error.response?.data?.message || "Upload failed", {
         position: "top-right",
-        autoClose: 2000
+        autoClose: 1000
       });
     } finally {
       setIsLoading(false);
@@ -83,6 +127,7 @@ const BulkUploadForm = ({ encryptedCategoryId, updateItems }) => {
           type="file"
           accept=".csv"
           onChange={(e) => setFile(e.target.files[0])}
+          onClick={(e) => (e.target.value = null)}
           className="hidden"
         />
         {file && (

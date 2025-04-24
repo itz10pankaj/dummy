@@ -50,6 +50,7 @@ const Item = ({ initialItems }) => {
         <div className="h-screen bg-gray-100 border-gray-300 p-4 flex-col space-y-2 overflow-y-auto" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
             <ul className="space-y-2">
                 {items.map((item) => {
+                    if (!item || !item.id) return null; // prevent crashing
                     const encryptedItemId = encryptID(item.id);
                     return (
                         <li

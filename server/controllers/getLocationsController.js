@@ -10,7 +10,7 @@ export const getLocations = async (req, res) => {
 
         if (!locations) {
             // return res.status(404).json({ message: "No locations found" });
-            return responseHandler.notFound(res, "No locations found", 404);
+            return responseHandler.badRequest(res, "No locations found", 404);
         }
 
         // res.status(200).json(locations);

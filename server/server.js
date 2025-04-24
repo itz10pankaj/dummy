@@ -14,12 +14,15 @@ import contentRoute from "./routes/contentRoute.js"
 import imageRoute from "./routes/imageRoutes.js"
 import categoryRoute from "./routes/categoriesRoute.js"
 import itemsRoute from "./routes/ItemsRoutes.js"
+import logsRoutes from "./routes/logsRoutes.js"
 import photosRoute from "./routes/photoRoutes.js"
 import { getMetaData } from "./controllers/getMetaDataController.js";
 import locationRoute from "./routes/LocationRoute.js"
 import { initSocket } from "./config/socket.js";
 import chatRoutes from "./routes/chatRoutes.js";
 
+import fileUpload from 'express-fileupload';
+import pdfRoutes from "./routes/pdfRoutes.js"
 import { responseHandler } from "./utlis/responseHandler.js";
 import { ApolloServer } from "apollo-server-express";
 import { GraphQLUpload, graphqlUploadExpress } from 'graphql-upload';
@@ -40,6 +43,7 @@ app.use(cors({
     credentials: true
 }));
 app.use(cookieParser());
+app.use(fileUpload());
 const swaggerDocument = JSON.parse(fs.readFileSync('./swagger.json', 'utf-8'));
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
@@ -94,6 +98,8 @@ app.use("/api", chatRoutes);
 app.use("/api/", categoryRoute);
 app.use("/api/", itemsRoute);
 app.use("/api/", photosRoute);
+app.use("/api/",logsRoutes);
+app.use('/api/pdf', pdfRoutes);
 app.use((req, res, next) => {
     console.log(`Request received: ${req.method} ${req.url}`);
     next();
@@ -101,6 +107,8 @@ app.use((req, res, next) => {
 app.use("/uploads", express.static("uploads"));
 app.use("/photoUpload", express.static("uploads"));
 app.use("/attach", express.static("uploads"));
+app.use('/output', express.static('output'));
+
 // app.use("/uploads/graphql", express.static("uploads/graphql"));
 
 const PORT = process.env.PORT || 8081;

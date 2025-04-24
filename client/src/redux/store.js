@@ -7,6 +7,7 @@ import imageReducer from "./slices/imageSlice.js"
 import categoryReducer from "./slices/categorySlice.js"
 import itemReducer from "./slices/itemsSlice.js"
 import photoReducer from "./slices/photoSlice.js"
+import logReducer from "./slices/logsSLice.js"
 const preloadedState = typeof window !== "undefined" ? window.__PRELOADED_STATE__ || {} : {};
 // const preloadedState={}
 const store = configureStore({ 
@@ -18,7 +19,9 @@ const store = configureStore({
     images:imageReducer,
     categories:categoryReducer,
     items:itemReducer,
-    photos:photoReducer
+    photos:photoReducer,
+    logs:logReducer
+
   },
   preloadedState
 });

@@ -7,7 +7,9 @@ import "../config/i18n";
 import Categories from "../components/Categories"
 import Item from '../components/Items';
 import PhotoSection from '../components/photosSection';
-import Advertisment from "../components/Advertisment"
+// import Advertisment from "../components/Advertisment"
+import UserLogs from '../components/userLog';
+import PDFViewer from '../components/PDFReader';
 const Details = ({initialData}) => {
     const location = useLocation();
     const { t, i18n } = useTranslation();
@@ -67,7 +69,7 @@ const Details = ({initialData}) => {
           
         </div>
         <div className='w-1/4'>
-          <Advertisment />
+          <UserLogs />
         </div>
       </div>
     </div>

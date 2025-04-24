@@ -4,7 +4,8 @@ import "react-toastify/dist/ReactToastify.css";
 import { encryptID } from "../services/UrlEncode";
 import { useDispatch, useSelector } from "react-redux";
 import { setPhotos } from "../redux/slices/photoSlice";
-import { getItems,getCategories,addPhotoApi } from "../services/apiServices";
+import { setLogs } from "../redux/slices/logsSLice";
+import { getItems, getCategories, addPhotoApi, addUserLogApi } from "../services/apiServices";
 const PhotoUploadModal = ({ closeModal }) => {
   const dispatch = useDispatch();
   const photos = useSelector((state) => state.photos);
@@ -13,7 +14,9 @@ const PhotoUploadModal = ({ closeModal }) => {
   const [itemId, setItemId] = useState("");
   const [categories, setCategories] = useState([]);
   const [items, setItems] = useState([]);
-
+  const [isLoading, setIsLoading] = useState(false);
+  const user = useSelector((state) => state.auth.user);
+  const logsFromStore = useSelector((state) => state.logs.userId)
   // Fetch courses when the component mounts
   useEffect(() => {
     const fetchCategories = async () => {
@@ -31,7 +34,7 @@ const PhotoUploadModal = ({ closeModal }) => {
   // Fetch menus when a course is selected
   const fetchItems = async (categoryId) => {
     try {
-      const res= await getItems(encryptID(categoryId));
+      const res = await getItems(encryptID(categoryId));
       setItems(res);
       setItemId(""); // Reset menu selection when course changes
     } catch (error) {
@@ -40,7 +43,7 @@ const PhotoUploadModal = ({ closeModal }) => {
   };
   useEffect(() => {
     if (categoryId) {
-        fetchItems(categoryId); 
+      fetchItems(categoryId);
     }
   }, [categoryId]);
   useEffect(() => {
@@ -60,13 +63,14 @@ const PhotoUploadModal = ({ closeModal }) => {
     if (!photoes.length || !itemId) {
       toast.error("Please select an image and a menu.", {
         position: "top-right",
-        autoClose: 2000,
+        autoClose: 1000,
       });
       return;
     }
+    setIsLoading(true);
     const encryptedItemId = encryptID(itemId)
     const formData = new FormData();
-    photoes.forEach((photo)=>{
+    photoes.forEach((photo) => {
       formData.append("files", photo)
     })
     formData.append("itemId", encryptedItemId);
@@ -74,24 +78,41 @@ const PhotoUploadModal = ({ closeModal }) => {
       const uploadedPhotos = await addPhotoApi(formData)
       dispatch(setPhotos({
         [itemId]: [
-            ...(photos[itemId] || []),
-            ...uploadedPhotos 
+          ...(photos[itemId] || []),
+          ...uploadedPhotos
         ]
-    }));
+      }));
       toast.success("Image uploaded successfully!", {
         position: "top-right",
-        autoClose: 2000,
+        autoClose: 1000,
       });
+      const log=await addUserLogApi({
+        userId: user?.id,
+        action: `Added Photo`,
+        status: true
+      });
+      dispatch(setLogs({ userId:[log,...logsFromStore]}));
       setTimeout(() => {
         closeModal();
-      }, 3000);
+      }, 1000);
 
     } catch (error) {
       console.error("Upload failed:", error);
+      const log=await addUserLogApi({
+        userId: user?.id,
+        action: "Photo Add failed",
+        status: false
+      });
+      dispatch(setLogs({ userId:[log,...logsFromStore]}));
       toast.error("Upload failed!", {
         position: "top-right",
-        autoClose: 2000,
+        autoClose: 1000,
       });
+      setTimeout(() => {
+        closeModal();
+      }, 1000);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -140,7 +161,7 @@ const PhotoUploadModal = ({ closeModal }) => {
           type="file"
           onChange={handleImageChange}
           className="w-full p-2 border rounded mb-4"
-          multiple 
+          multiple
         />
 
         {/* Buttons */}
@@ -154,9 +175,9 @@ const PhotoUploadModal = ({ closeModal }) => {
           <button
             onClick={handleUpload}
             className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
-            disabled={!itemId}
+            disabled={!itemId || isLoading}
           >
-            Upload
+            {isLoading ? "Uploading..." : "Upload"}
           </button>
         </div>
       </div>

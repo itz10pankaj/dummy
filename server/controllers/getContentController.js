@@ -60,7 +60,7 @@ export const addContent = async (req, res) => {
         const menu = await menuRepository.findOne({ where: { id: decryptedMenuId } });
         if (!menu) {
             // return res.status(404).json({ error: "Menu not found" });
-            return responseHandler.notFound(res, "Menu not found", 404);
+            return responseHandler.badRequest(res, "Menu not found", 404);
         }
 
         // Create new content
@@ -111,7 +111,7 @@ export const updateContent = async (req, res) => {
 
         if (!content) {
             // return res.status(404).json({ error: "Content not found" });
-            return responseHandler.notFound(res, "Content not found", 404);
+            return responseHandler.badRequest(res, "Content not found", 404);
         }
 
         // Update the content text
