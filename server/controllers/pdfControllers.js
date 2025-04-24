@@ -1,3 +1,6 @@
+// sudo apt update
+// sudo apt install poppler-utils
+
 import pdfParse from 'pdf-parse/lib/pdf-parse.js';
 import { responseHandler } from '../utlis/responseHandler.js';
 import { AppDataSource } from '../config/data-source.js';

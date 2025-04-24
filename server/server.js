@@ -49,7 +49,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 await AppDataSource.initialize()
 await server.start();
-app.use('/graphql', graphqlUploadExpress()); // ✅ Scoped only to /graphql
+app.use('/graphql', graphqlUploadExpress());
 server.applyMiddleware({ app, path: '/graphql' });
 const check = false;
 if (check) {

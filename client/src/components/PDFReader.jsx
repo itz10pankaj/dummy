@@ -1,3 +1,5 @@
+//npm i html2pdf
+
 import React, { useState, useRef } from "react";
 import axios from "axios";
 const PDFViewer = () => {
