@@ -21,7 +21,7 @@ import locationRoute from "./routes/LocationRoute.js"
 import { initSocket } from "./config/socket.js";
 import chatRoutes from "./routes/chatRoutes.js";
 
-import fileUpload from 'express-fileupload';
+
 import pdfRoutes from "./routes/pdfRoutes.js"
 import { responseHandler } from "./utlis/responseHandler.js";
 import { ApolloServer } from "apollo-server-express";
@@ -43,14 +43,14 @@ app.use(cors({
     credentials: true
 }));
 app.use(cookieParser());
-app.use(fileUpload());
+// app.use(fileUpload());
 const swaggerDocument = JSON.parse(fs.readFileSync('./swagger.json', 'utf-8'));
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 await AppDataSource.initialize()
-// app.use(graphqlUploadExpress());
-// await server.start();
-// server.applyMiddleware({app,path: '/graphql'})
+await server.start();
+app.use('/graphql', graphqlUploadExpress()); // ✅ Scoped only to /graphql
+server.applyMiddleware({ app, path: '/graphql' });
 const check = false;
 if (check) {
     app.get('/api/live-data', async (req, res) => {

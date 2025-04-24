@@ -2,11 +2,12 @@ import express from 'express';
 import { uploadPdf,updateTemplateContent } from "../controllers/pdfControllers.js";
 import path from 'path'
 import { fileURLToPath } from 'url';
+import fileUpload from 'express-fileupload';
 import fs from 'fs';
 const router = express.Router();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
+router.use(fileUpload());
 router.post('/pdf-upload', uploadPdf);
 router.put('/update-template', updateTemplateContent);
 router.get('/images/:imageName', (req, res) => {
