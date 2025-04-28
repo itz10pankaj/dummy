@@ -1,5 +1,4 @@
 //npm i html2pdf
-
 import React, { useState, useRef } from "react";
 import axios from "axios";
 const PDFViewer = () => {
@@ -12,24 +11,7 @@ const PDFViewer = () => {
   const [downloadReady, setDownloadReady] = useState(false);
   const fileInputRef = useRef(null);
   const previewRef = useRef(null);
-  // const [editorLoaded, setEditorLoaded] = useState(false);
-  // const [Editor, setEditor] = useState({ CKEditor: null, ClassicEditor: null, ImageResize: null, ImageToolbar: null, ImageStyle: null });
 
-
-  // useEffect(() => {
-  //   const loadCKEditor = async () => {
-  //     try {
-  //       const { CKEditor } = await import("@ckeditor/ckeditor5-react");
-  //       const ClassicEditor = (await import("@ckeditor/ckeditor5-build-classic")).default;
-  //       setEditor({ CKEditor, ClassicEditor });
-  //       setEditorLoaded(true);
-  //     } catch (error) {
-  //       console.error("CKEditor loading failed:", error);
-  //     }
-  //   };
-
-  //   loadCKEditor();
-  // }, []);
   const transformImagePaths = (html) => {
     return html.replace(/src="([^"]*)"/g, (match, path) => {
       const imageName = path.split('/').pop();
@@ -40,12 +22,12 @@ const PDFViewer = () => {
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, "text/html");
     const imgElements = doc.querySelectorAll("img");
-  
+
     const convertToBase64 = async (url) => {
       try {
         const res = await fetch(url);
         const blob = await res.blob();
-  
+
         return new Promise((resolve, reject) => {
           const reader = new FileReader();
           reader.onloadend = () => resolve(reader.result); // Base64 string
@@ -57,7 +39,7 @@ const PDFViewer = () => {
         return url; // fallback
       }
     };
-  
+
     for (const img of imgElements) {
       const src = img.getAttribute("src");
       if (src && !src.startsWith("data:")) {
@@ -65,13 +47,14 @@ const PDFViewer = () => {
         img.setAttribute("src", base64);
       }
     }
-  
+
     return doc.body.innerHTML;
   };
-  
+
   const handlePreviewChange = () => {
     if (previewRef.current) {
-      setHtmlContent(previewRef.current.innerHTML);
+      setHtmlContent(previewRef.current.innerHTML); // Update content
+
     }
   };
 
@@ -87,8 +70,9 @@ const PDFViewer = () => {
       const res = await axios.post("http://localhost:8081/api/pdf/pdf-upload", formData);
       setTemplateId(res.data?.data?.id);
       setPdfText(res.data?.data?.content || "No text extracted");
+      const transformedHtml = transformImagePaths(res.data?.data?.htmlContent || "");
       setHtmlContent(transformImagePaths(res.data?.data?.htmlContent || ""));
-      console.log(transformImagePaths(res.data?.data?.htmlContent || ""))
+      extractDataFromHTML(transformedHtml);
       setDownloadReady(false);
     } catch (err) {
       console.error(err);
@@ -124,14 +108,13 @@ const PDFViewer = () => {
       alert("No HTML content available to generate PDF.");
       return;
     }
-  
     const processedHtml = await replaceImageUrlsWithBase64(htmlContent);
     const element = document.createElement("div");
     element.innerHTML = processedHtml;
     element.style.width = "100%";
-    element.style.boxSizing = "border-box";
+    element.style.boxSizing = "border-box"; 
     element.style.padding = "10px";
-  
+
     const style = document.createElement("style");
     style.innerHTML = `
       * {
@@ -153,20 +136,20 @@ const PDFViewer = () => {
       }
     `;
     element.prepend(style);
-  
+
     document.body.appendChild(element);
-  
+
     try {
       const html2pdf = (await import("html2pdf.js")).default;
-  
+
       const opt = {
         margin: [0.5, 0, 0.5, 0], // top, left, bottom, right
         filename: "html-content.pdf",
         image: { type: "jpeg", quality: 0.98 },
-        html2canvas: { scale: 2,windowWidth: 1024 },
+        html2canvas: { scale: 2, windowWidth: 1024 },
         jsPDF: { unit: "in", format: "a4", orientation: "portrait" },
       };
-  
+
       await html2pdf().set(opt).from(element).save();
     } catch (err) {
       console.error("Error generating PDF:", err);
@@ -174,8 +157,7 @@ const PDFViewer = () => {
     } finally {
       document.body.removeChild(element);
     }
-  
-    // Clear content afterward (optional)
+
     setPdfText("");
     setHtmlContent("");
     setIsEditing(false);
@@ -185,7 +167,7 @@ const PDFViewer = () => {
       fileInputRef.current.value = "";
     }
   };
-  
+
   const handleReset = () => {
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
@@ -197,7 +179,75 @@ const PDFViewer = () => {
     setDownloadReady(false);
   };
 
-
+  const extractDataFromHTML = (html) => {
+    if (!html) {
+      console.log("No HTML content provided");
+      return;
+    }
+    console.log("Starting extraction...");
+    try {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, "text/html");
+      const getFieldValue = (label) => {
+        const sanitizedLabel = label.replace(/\s+/g, ' ').trim();
+        const labelElement = Array.from(doc.querySelectorAll('p')).find(el =>
+          el.textContent.replace(/\s+/g, ' ').trim().includes(sanitizedLabel)
+        );
+        if (!labelElement) {
+          console.log(`Label "${sanitizedLabel}" not found in the HTML`);
+          return "";
+        }
+        if (label === "No. Invoice") {
+          const invoiceElement =labelElement
+          if (invoiceElement) {
+            const invoiceText = invoiceElement.textContent;
+            return invoiceText.split(':').pop().trim();
+          }
+          return "";
+        }
+        if (label === "Nomor Rekening") {
+          const rekeningValue = Array.from(doc.querySelectorAll('p')).find(el => 
+            el.getAttribute('style')?.includes('top:558px') && 
+            el.getAttribute('style')?.includes('left:314px')
+          );
+          return rekeningValue ? rekeningValue.textContent.trim() : "";
+        }
+        if (label === "Batas Waktu Pembayaran") {
+          const deadlineValue = Array.from(doc.querySelectorAll('p')).find(el => 
+            el.getAttribute('style')?.includes('top:621px') && 
+            el.getAttribute('style')?.includes('left:314px')
+          );
+          return deadlineValue ? deadlineValue.textContent.trim() : "";
+        }
+        const valueElement = labelElement.nextElementSibling;
+        return valueElement ? valueElement.textContent.trim() : "";
+      };
+      const extractedData = {
+        No_Invoice: getFieldValue("No. Invoice"),
+        No_Order: getFieldValue("No. Order"),
+        Nama_Asuransi: getFieldValue("Nama Asuransi"),
+        Tipe_Asuransi: getFieldValue("Tipe Asuransi"),
+        Nama_Produk: getFieldValue("Nama Produk"),
+        Nama_Pemegang_Polis: getFieldValue("Nama Pemegang Polis"),
+        Periode_Asuransi: getFieldValue("Periode Asuransi"),
+        Metode_Pembayaran: getFieldValue("Metode Pembayaran"),
+        Nomor_Rekening: getFieldValue("Nomor Rekening"),
+        Nama_Rekening: getFieldValue("Nama Rekening"),
+        Batas_Waktu_Pembayaran: getFieldValue("Batas Waktu Pembayaran"),
+        Harga_Premi: getFieldValue("Harga Premi"),
+        Biaya_Admin_dan_Meterai: getFieldValue("Biaya Admin dan Meterai"),
+        Biaya_Transaksi: getFieldValue("Biaya Transaksi"),
+        Diskon_dan_Cashback: getFieldValue("Diskon dan Cashback"),
+        Total_Dibayarkan: getFieldValue("Total Dibayarkan"),
+      };
+  
+      console.log(extractedData);
+    } catch (err) {
+      console.error("Error extracting data:", err);
+      return null;
+    }
+  };
+  
   return (
     <div className="mx-auto mt-10 p-6 shadow-md rounded bg-white max-w-5xl">
       <h1 className="text-2xl font-bold mb-4">PDF Template Editor</h1>
@@ -245,34 +295,17 @@ const PDFViewer = () => {
                 <div
                   ref={previewRef}
                   className="border mt-2 p-4 bg-white min-h-48 overflow-auto"
-                  contentEditable
-                  dangerouslySetInnerHTML={{ __html: htmlContent }}
+                  // contentEditable
                   onInput={handlePreviewChange}
                   onBlur={handlePreviewChange}
+                  // suppressContentEditableWarning
                   style={{
                     outline: 'none',
                     fontFamily: 'inherit',
                     lineHeight: '1.5'
                   }}
+                  dangerouslySetInnerHTML={{ __html: htmlContent }}
                 />
-                {/* 
-                <Editor.CKEditor
-                  editor={Editor.ClassicEditor}
-                  data={htmlContent}
-                  onChange={(event, editor) => {
-                    const data = editor.getData();
-                    setHtmlContent(data);
-                  }}
-                  config={{
-                    toolbar: [
-                      'heading', '|',
-                      'bold', 'italic', 'link', 'bulletedList', 'numberedList', '|',
-                      'blockQuote', 'insertTable', '|',
-                      'undo', 'redo'
-                    ]
-                  }}
-                />
-                */}
               </div>
             ) : (
               <div

@@ -7,6 +7,8 @@ dotenv.config();
 export const Template = new EntitySchema({
   name: "Template",
   tableName: "ins_templates",
+  charset: "utf8mb4",
+  collation: "utf8mb4_unicode_ci",
   columns: {
     id: {
       primary: true,
@@ -15,12 +17,18 @@ export const Template = new EntitySchema({
     },
     fileName: {
       type: "varchar",
+      charset: "utf8mb4", // Explicitly set for this column
+      collation: "utf8mb4_unicode_ci",
     },
     content: {
       type: "longtext",
+      charset: "utf8mb4", // Explicitly set for this column
+      collation: "utf8mb4_unicode_ci",
     },
     htmlContent: {
-  type: "longtext", // or "text" depending on size
+  type: "longtext",
+  charset: "utf8mb4", // Explicitly set for this column
+      collation: "utf8mb4_unicode_ci", // or "text" depending on size
   nullable: true,
 },
     createdAt: {

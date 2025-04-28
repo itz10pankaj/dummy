@@ -26,6 +26,9 @@ export const AppDataSource = new DataSource({
     synchronize: true,  
     logging: true,
     entities: [User,Menu,Content,Course,Image,MetaTitle,Location,Category,Item,Photo,UserLogs,Template],
-    subscribers: [CacheInvalidationSubscriber,ChangeLogger
-    ],
+    subscribers: [CacheInvalidationSubscriber,ChangeLogger],
+    charset: "utf8mb4", // Add this line
+    extra: {
+        charset: "utf8mb4_unicode_ci" // Add this for connection-level settings
+    }
 });
