@@ -4,6 +4,9 @@ import { decryptID } from "../middleware/urlencrypt.js"
 import { redisClient } from "../config/redis-client.js";
 import { responseHandler } from "../utlis/responseHandler.js";
 import { getMongoDb } from "../config/mogodb.js";
+import sharp from 'sharp';
+import fs from 'fs';
+import path from 'path';
 const getImagesbyMenuID=async(menuId)=>{
     return await AppDataSource.getRepository(Image).find({
         where:{menu:{id:menuId}},
@@ -75,8 +78,6 @@ export const addImageController = async (req, res) => {
 };
 
 export const attachController = async (req, res) => {
-    // console.log("File received in attachController:", req.file); // Debugging log
-    // console.log("Request body:", req.body); // Debugging log
   
     if (!req.file) {
       return res.status(400).json({ message: "No file uploaded!" });
@@ -93,3 +94,41 @@ export const attachController = async (req, res) => {
     await db.collection("messages").insertOne(msg);
     return responseHandler.success(res, msg, "File sent successfully", 200);
 }
+
+//pixel image controller
+export const HandleImage=async (req, res) => {
+    const { widthSize, heightSize, resizeToFileSize } = req.body;
+    const file = req.file;
+  
+    if (!file) return  responseHandler.badRequest(res, "No file uploaded!", 400);
+    const originalPath = path.join('images', file.filename + path.extname(file.originalname));
+    const resizedPath = path.join('images', 'resized_' + file.filename + path.extname(file.originalname));
+  
+    fs.renameSync(file.path, originalPath);
+  
+    if (resizeToFileSize) {
+      let targetSizeKB = parseInt(resizeToFileSize);
+      let compressionQuality = 80;
+      let sizeInKB = (fs.statSync(originalPath).size / 1024).toFixed(2);
+  
+      while (sizeInKB > targetSizeKB && compressionQuality > 10) {
+        await sharp(originalPath)
+          .jpeg({ quality: compressionQuality })
+          .toFile(resizedPath);
+  
+        sizeInKB = (fs.statSync(resizedPath).size / 1024).toFixed(2);
+        compressionQuality -= 10;
+      }
+    } else {
+      // Resize based on width and height
+      await sharp(originalPath)
+        .resize(Number(widthSize), Number(heightSize))
+        .toFile(resizedPath);
+    }
+  
+    return responseHandler.success(res, {
+      original: originalPath,
+      resized: resizedPath,
+    }, 'Image uploaded and resized successfully', 201);
+  };
+  

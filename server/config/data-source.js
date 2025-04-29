@@ -24,11 +24,14 @@ export const AppDataSource = new DataSource({
     password: process.env.DB_PASS,  
     database: process.env.DB_NAME,
     synchronize: true,  
-    logging: true,
+    logging: false,
     entities: [User,Menu,Content,Course,Image,MetaTitle,Location,Category,Item,Photo,UserLogs,Template],
     subscribers: [CacheInvalidationSubscriber,ChangeLogger],
     charset: "utf8mb4", // Add this line
+    poolSize: 20,
     extra: {
-        charset: "utf8mb4_unicode_ci" // Add this for connection-level settings
+        charset: "utf8mb4_unicode_ci",
+        connectionLimit: 50,
+        queueLimit: 100 
     }
 });

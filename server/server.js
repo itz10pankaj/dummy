@@ -20,8 +20,6 @@ import { getMetaData } from "./controllers/getMetaDataController.js";
 import locationRoute from "./routes/LocationRoute.js"
 import { initSocket } from "./config/socket.js";
 import chatRoutes from "./routes/chatRoutes.js";
-
-
 import pdfRoutes from "./routes/pdfRoutes.js"
 import { responseHandler } from "./utlis/responseHandler.js";
 import { ApolloServer } from "apollo-server-express";
@@ -106,10 +104,11 @@ app.use((req, res, next) => {
 });
 app.use("/uploads", express.static("uploads"));
 app.use("/photoUpload", express.static("uploads"));
+app.use("/bulk-upload", express.static("uploads"));
 app.use("/attach", express.static("uploads"));
 app.use('/output', express.static('output'));
+app.use("/image-handle",express.static("images"));
 
-// app.use("/uploads/graphql", express.static("uploads/graphql"));
 
 const PORT = process.env.PORT || 8081;
 

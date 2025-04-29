@@ -11,7 +11,7 @@ export class ChangeLogger implements EntitySubscriberInterface {
      * Listen to INSERT events
      */
     async afterInsert(event: InsertEvent<any>) {
-        console.log("✅ INSERT event triggered for table:", event.metadata.tableName);
+        // console.log("✅ INSERT event triggered for table:", event.metadata.tableName);
         await this.logChange("INSERT", {
             entity: event.entity,
             databaseEntity: null,
@@ -23,7 +23,7 @@ export class ChangeLogger implements EntitySubscriberInterface {
      * Listen to UPDATE events
      */
     async afterUpdate(event: { entity: any; databaseEntity: any; metadata: { tableName: any; }; }) {
-        console.log("✅ UPDATE event triggered for table:", event.metadata.tableName);
+        // console.log("✅ UPDATE event triggered for table:", event.metadata.tableName);
         await this.logChange("UPDATE", event);
     }
 
@@ -31,7 +31,7 @@ export class ChangeLogger implements EntitySubscriberInterface {
      * Listen to DELETE events
      */
     async afterRemove(event: RemoveEvent<any>) {
-        console.log("✅ DELETE event triggered for table:", event.metadata.tableName);
+        // console.log("✅ DELETE event triggered for table:", event.metadata.tableName);
         await this.logChange("DELETE", event);
     }
 

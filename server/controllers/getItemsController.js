@@ -4,223 +4,346 @@ import { Category } from "../models/Categories.js";
 import { decryptID } from "../middleware/urlencrypt.js";
 import { redisClient } from "../config/redis-client.js";
 import { responseHandler } from "../utlis/responseHandler.js";
+import { cpus } from 'os';
 import fs from "fs"
 import path from "path"
 import csv from "csv-parser"
 import { fileURLToPath } from "url";
-
+import { Transform } from "stream";
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import { Worker } from 'worker_threads';
 
 
 const getItemsByCategoryId = async (categoryId) => {
-    return await AppDataSource.getRepository(Item).find({
-        where: { category: { id: categoryId } },
-        relations: ["category"],
-    });
+  return await AppDataSource.getRepository(Item).find({
+    where: { category: { id: categoryId } },
+    relations: ["category"],
+  });
 }
 
 export const getItems = async (req, res) => {
-    try {
-        let { categoryId } = req.params;
-        const decryptedCategoryId = decryptID(categoryId);
-        console.log(decryptedCategoryId)
-        if (!categoryId) {
-            return responseHandler.badRequest(res, "Category ID is required", 400);
-        }
-        const cachedData = await redisClient.get(`Items:${decryptedCategoryId}`);
-        if (cachedData) {
-            console.log("Cache hit");
-            return responseHandler.success(res, JSON.parse(cachedData), "Items fetched sucessfully", 200);
-        }
-
-        if (!decryptedCategoryId) {
-            return responseHandler.badRequest(res, "Invalid Category ID", 400);
-        }
-        const items = await getItemsByCategoryId(decryptedCategoryId);
-        await redisClient.setex(`Items:${decryptedCategoryId}`, 3600, JSON.stringify(items));
-        return responseHandler.success(res, items, "Items fetched successfully", 200);
-    } catch (err) {
-        return responseHandler.error(res, err, "Server Error", 500);
+  try {
+    let { categoryId } = req.params;
+    const decryptedCategoryId = decryptID(categoryId);
+    console.log(decryptedCategoryId)
+    if (!categoryId) {
+      return responseHandler.badRequest(res, "Category ID is required", 400);
     }
+    const cachedData = await redisClient.get(`Items:${decryptedCategoryId}`);
+    if (cachedData) {
+      console.log("Cache hit");
+      return responseHandler.success(res, JSON.parse(cachedData), "Items fetched sucessfully", 200);
+    }
+
+    if (!decryptedCategoryId) {
+      return responseHandler.badRequest(res, "Invalid Category ID", 400);
+    }
+    const items = await getItemsByCategoryId(decryptedCategoryId);
+    await redisClient.setex(`Items:${decryptedCategoryId}`, 3600, JSON.stringify(items));
+    return responseHandler.success(res, items, "Items fetched successfully", 200);
+  } catch (err) {
+    return responseHandler.error(res, err, "Server Error", 500);
+  }
 }
 
 
 export const addItem = async (req, res) => {
-    try {
-        const { categoryId } = req.params;
-        const decryptedCategoryId = decryptID(categoryId);
-        console.log("hitted")
-        if (!decryptedCategoryId) {
-            return responseHandler.badRequest(res, "Invalid Category ID", 400);
-        }
-
-        const { name, latitude, longitude } = req.body;
-
-        if (!name) {
-            return responseHandler.badRequest(res, "Item name is required", 400);
-        }
-        if (!latitude) {
-            return responseHandler.badRequest(res, "Item latitude is required", 400);
-        }
-        if (!longitude) {
-            return responseHandler.badRequest(res, "Item longitude is required", 400);
-        }
-        const categoryRepository = AppDataSource.getRepository(Category);
-        const itemRepository = AppDataSource.getRepository(Item);
-
-        const category = await categoryRepository.findOne({
-            where: { id: decryptedCategoryId },
-        });
-        if (!category) {
-            return responseHandler.badRequest(res, "Category not found", 404);
-        }
-        const existing = await itemRepository.findOne({
-          where: {
-            name: name,
-            latitude: latitude,
-            longitude: longitude,
-            category: { id: category.id },
-          },
-          relations: ["category"],
-        });
-    
-        // ✅ If item already exists
-        if (existing) {
-          return responseHandler.badRequest(res,"Item already exists", 409);
-        }
-        const newItem = itemRepository.create({
-            name,
-            latitude,
-            longitude,
-            category,
-        });
-        await itemRepository.save(newItem);
-        const updatedItems = await itemRepository.find({
-            where: { category: { id: decryptedCategoryId } },
-            relations: ["category"],
-        })
-        await redisClient.setex(`Items:${decryptedCategoryId}`, 3600, JSON.stringify(updatedItems));
-        return responseHandler.success(res, newItem, "Item added successfully", 201);
-      
+  try {
+    const { categoryId } = req.params;
+    const decryptedCategoryId = decryptID(categoryId);
+    console.log("hitted")
+    if (!decryptedCategoryId) {
+      return responseHandler.badRequest(res, "Invalid Category ID", 400);
     }
-    catch (err) {
-        console.error("Error adding item:", err);
-        return responseHandler.error(res, err, "Server Error", 500);
+
+    const { name, latitude, longitude } = req.body;
+
+    if (!name) {
+      return responseHandler.badRequest(res, "Item name is required", 400);
     }
+    if (!latitude) {
+      return responseHandler.badRequest(res, "Item latitude is required", 400);
+    }
+    if (!longitude) {
+      return responseHandler.badRequest(res, "Item longitude is required", 400);
+    }
+    const categoryRepository = AppDataSource.getRepository(Category);
+    const itemRepository = AppDataSource.getRepository(Item);
+
+    const category = await categoryRepository.findOne({
+      where: { id: decryptedCategoryId },
+    });
+    if (!category) {
+      return responseHandler.badRequest(res, "Category not found", 404);
+    }
+    const existing = await itemRepository.findOne({
+      where: {
+        name: name,
+        latitude: latitude,
+        longitude: longitude,
+        category: { id: category.id },
+      },
+      relations: ["category"],
+    });
+
+    // ✅ If item already exists
+    if (existing) {
+      return responseHandler.badRequest(res, "Item already exists", 409);
+    }
+    const newItem = itemRepository.create({
+      name,
+      latitude,
+      longitude,
+      category,
+    });
+    await itemRepository.save(newItem);
+    const updatedItems = await itemRepository.find({
+      where: { category: { id: decryptedCategoryId } },
+      relations: ["category"],
+    })
+    await redisClient.setex(`Items:${decryptedCategoryId}`, 3600, JSON.stringify(updatedItems));
+    return responseHandler.success(res, newItem, "Item added successfully", 201);
+
+  }
+  catch (err) {
+    console.error("Error adding item:", err);
+    return responseHandler.error(res, err, "Server Error", 500);
+  }
 }
 
 
 
 export const bulkUploadItems = async (req, res) => {
-    try {
-      const latitude = req.body.latitude;
-      const longitude = req.body.longitude;
-      if (!latitude || !longitude) {
-        return responseHandler.badRequest(res, "Location is required", 400);
-      }
-      if (!req.file) {
-        return responseHandler.badRequest(res, "CSV file not found", 400);
-      }
-      const itemsToInsert = [];
-      let categoryIdFromCSV = null;
-      const filePath = path.resolve(req.file.path);
-  
-      // Read CSV
-      fs.createReadStream(filePath)
-        .pipe(csv())
-        .on("data", (row) => {
-          if (row.name && row.categoryId) {
-            categoryIdFromCSV = row.categoryId.trim();
+  try {
+    const startTime = Date.now();
+    console.log(`Insertion started at: ${new Date(startTime).toLocaleString()}`);
+    const latitude = req.body.latitude;
+    const longitude = req.body.longitude;
+    if (!latitude || !longitude) {
+      return responseHandler.badRequest(res, "Location is required", 400);
+    }
+    if (!req.file) {
+      return responseHandler.badRequest(res, "CSV file not found", 400);
+    }
+    const itemsToInsert = [];
+    const itemsAlreadyInserted = new Set(); // To track already inserted items
+    let categoryIdFromCSV = null;
+    const filePath = path.resolve(req.file.path);
+
+    // Read CSV
+    fs.createReadStream(filePath)
+      .pipe(csv())
+      .on("data", (row) => {
+        if (row.name && row.categoryId) {
+          categoryIdFromCSV = row.categoryId.trim();
+          const itemKey = `${row.name.trim()}-${latitude}-${longitude}-${categoryIdFromCSV}`;
+
+          // Check if the item is already in the list of itemsToInsert
+          if (!itemsAlreadyInserted.has(itemKey)) {
+            itemsAlreadyInserted.add(itemKey);
             itemsToInsert.push({
               name: row.name.trim(),
               latitude,
               longitude,
-              categoryId: categoryIdFromCSV
+              categoryId: categoryIdFromCSV,
             });
           }
-        })
-        .on("end", async () => {
-          const categoryRepository = AppDataSource.getRepository(Category);
-          const itemRepository = AppDataSource.getRepository(Item);
-  
-          const category = await categoryRepository.findOne({
-            where: { id: categoryIdFromCSV },
-          });
-  
-          if (!category) {
-            return responseHandler.badRequest(res, "Category not found", 404);
-          }
-  
-          const insertedItems = [];
-          const duplicateItems = [];
-  
-          for (const item of itemsToInsert) {
-            // Assign relation
-            item.category = category;
-  
-            const existing = await itemRepository.findOne({
-              where: {
-                name: item.name,
-                latitude: item.latitude,
-                longitude: item.longitude,
-                category: { id: category.id },
-              },
-              relations: ["category"],
-            });
-  
-            if (existing) {
-              duplicateItems.push({ ...item, status: "Duplicate" });
-            } else {
-              insertedItems.push(item);
-            }
-          }
-  
-          if (insertedItems.length > 0) {
-            await itemRepository.save(insertedItems);
-  
-            const updatedItems = await itemRepository.find({
-              where: { category: { id: category.id } },
-              relations: ["category"],
-            });
-  
-            await redisClient.setex(
-              `Items:${category.id}`,
-              3600,
-              JSON.stringify(updatedItems)
-            );
-          }
-  
-          // Remove uploaded file
-          fs.unlinkSync(filePath);
-  
-          // Combine inserted + duplicate with status
-          const allResults = [
-            ...insertedItems.map((i) => ({ ...i, status: "Inserted" })),
-            ...duplicateItems,
-          ];
-  
-          // CSV output
-          const csvString = [
-            ["name", "latitude", "longitude", "status"],
-            ...allResults.map((item) => [
-              item.name,
-              item.latitude,
-              item.longitude,
-              item.status,
-            ]),
-          ]
-            .map((row) => row.join(","))
-            .join("\n");
-  
-          // Send as downloadable CSV
-          res.setHeader("Content-disposition", `attachment; filename=result.csv`);
-          res.setHeader("Content-Type", "text/csv");
-          res.status(201).send(csvString);
+        }
+      })
+      .on("end", async () => {
+        const categoryRepository = AppDataSource.getRepository(Category);
+        const itemRepository = AppDataSource.getRepository(Item);
+
+        const category = await categoryRepository.findOne({
+          where: { id: categoryIdFromCSV },
         });
-    } catch (err) {
-      console.error("bulk error", err);
-      return responseHandler.error(res, err, "Server Error", 500);
+
+        if (!category) {
+          return responseHandler.badRequest(res, "Category not found", 404);
+        }
+
+        const insertedItems = [];
+        const duplicateItems = [];
+
+        for (const item of itemsToInsert) {
+          // Assign relation
+          item.category = category;
+
+          const existing = await itemRepository.findOne({
+            where: {
+              name: item.name,
+              latitude: item.latitude,
+              longitude: item.longitude,
+              category: { id: category.id },
+            },
+            relations: ["category"],
+          });
+
+          if (existing) {
+            duplicateItems.push({ ...item, status: "Duplicate" });
+          } else {
+            insertedItems.push(item);
+          }
+        }
+
+        if (insertedItems.length > 0) {
+          await itemRepository.save(insertedItems);
+
+          const updatedItems = await itemRepository.find({
+            where: { category: { id: category.id } },
+            relations: ["category"],
+          });
+
+          await redisClient.setex(
+            `Items:${category.id}`,
+            3600,
+            JSON.stringify(updatedItems)
+          );
+        }
+
+        // Remove uploaded file
+        fs.unlinkSync(filePath);
+
+        // Combine inserted + duplicate with status
+        const allResults = [
+          ...insertedItems.map((i) => ({ ...i, status: "Inserted" })),
+          ...duplicateItems,
+        ];
+
+        // CSV output
+        const csvString = [
+          ["name", "latitude", "longitude", "status"],
+          ...allResults.map((item) => [
+            item.name,
+            item.latitude,
+            item.longitude,
+            item.status,
+          ]),
+        ]
+          .map((row) => row.join(","))
+          .join("\n");
+
+        // Send as downloadable CSV
+        const endTime = Date.now();
+        const timeTaken = endTime - startTime;  // in milliseconds
+        console.log(`Insertion completed at: ${new Date(endTime).toLocaleString()}`);
+        console.log(`Total time taken for insertion: ${timeTaken} milliseconds`);
+        res.setHeader("Content-disposition", `attachment; filename=result.csv`);
+        res.setHeader("Content-Type", "text/csv");
+        res.status(201).send(csvString);
+      });
+  } catch (err) {
+    console.error("bulk error", err);
+    return responseHandler.error(res, err, "Server Error", 500);
+  }
+};
+
+
+
+export const bulkUploadItemsUsingWorker = async (req, res) => {
+  try {
+    console.log("Streaming upload started...");
+    console.log("Streaming upload started...");
+    console.time(" Total Time");
+    const startTime = Date.now();
+    console.log(`Insertion started at: ${new Date(startTime).toLocaleString()}`);
+
+    const latitude = req.body.latitude;
+    const longitude = req.body.longitude;
+
+    if (!latitude || !longitude) {
+      return responseHandler.badRequest(res, "Location is required", 400);
     }
-  };
-  
+    if (!req.file) {
+      return responseHandler.badRequest(res, "CSV file not found", 400);
+    }
+
+    const filePath = path.resolve(req.file.path);
+
+    const CPU_CORES = Math.max(4, cpus().length - 1);
+    const TOTAL_WORKERS = Math.min(CPU_CORES, 8);
+    const workerPool = [];
+
+
+    for (let i = 0; i < TOTAL_WORKERS; i++) {
+      const worker = new Worker(path.join(path.dirname(__filename), '../utlis/worker.js'));
+      workerPool.push(worker);
+    }
+
+    let currentWorkerIndex = 0;
+
+    const distributor = new Transform({
+      objectMode: true,
+      transform(row, encoding, callback) {
+        const worker = workerPool[currentWorkerIndex];
+        worker.postMessage({ type: 'row', row, latitude, longitude });
+        currentWorkerIndex = (currentWorkerIndex + 1) % TOTAL_WORKERS; // Round robin
+        callback();
+      }
+    });
+
+    // Step 3: Listen for workers to finish
+    const workerResults = [];
+    for (const worker of workerPool) {
+      const resultPromise = new Promise((resolve, reject) => {
+        const rows = [];
+        worker.on('message', (message) => {
+          if (message.type === 'rowResult') {
+            rows.push(message.data);
+          } else if (message.type === 'done') {
+            resolve(rows);
+          }
+        });
+        worker.on('error', reject);
+        worker.on('exit', (code) => {
+          if (code !== 0) {
+            reject(new Error(`Worker stopped with exit code ${code}`));
+          }
+        });
+      });
+      workerResults.push(resultPromise);
+    }
+
+    // Step 4: Start the file stream
+    await new Promise((resolve, reject) => {
+      fs.createReadStream(filePath)
+        .pipe(csv())
+        .pipe(distributor)
+        .on('finish', () => {
+          // Once file read finishes, notify all workers
+          for (const worker of workerPool) {
+            worker.postMessage({ type: 'complete' });
+          }
+          resolve();
+        })
+        .on('error', reject);
+    });
+    
+    const results = await Promise.all(workerResults);
+    
+    const mergedRows = results.flat();
+    
+    const csvString = [
+      ["name", "latitude", "longitude", "status"],
+      ...mergedRows.map(row => [row.name, row.latitude, row.longitude, row.status])
+    ]
+    .map(row => row.join(","))
+    .join("\n");
+    
+    const endTime = Date.now();
+    const timeTaken = endTime - startTime; 
+    console.log(`Insertion completed at: ${new Date(endTime).toLocaleString()}`);
+    console.log(`Total time taken for insertion: ${timeTaken} milliseconds`);
+    console.timeEnd(" Total Time"); 
+    res.setHeader("Content-disposition", "attachment; filename=result.csv");
+    res.setHeader("Content-Type", "text/csv");
+    res.status(201).send(csvString);
+
+    // Clean up
+    fs.unlinkSync(filePath);
+
+  } catch (err) {
+    console.error("Bulk upload error:", err);
+    return responseHandler.error(res, err, "Server Error", 500);
+  }
+};  
