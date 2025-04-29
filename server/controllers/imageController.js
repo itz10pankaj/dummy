@@ -1,22 +1,23 @@
-import {AppDataSource} from "../config/data-source.js"
-import {Image} from "../models/Images.js"
+import { AppDataSource } from "../config/data-source.js"
+import { Image } from "../models/Images.js"
 import { decryptID } from "../middleware/urlencrypt.js"
 import { redisClient } from "../config/redis-client.js";
 import { responseHandler } from "../utlis/responseHandler.js";
 import { getMongoDb } from "../config/mogodb.js";
 import sharp from 'sharp';
+import { Jimp } from 'jimp'
 import fs from 'fs';
 import path from 'path';
-const getImagesbyMenuID=async(menuId)=>{
+const getImagesbyMenuID = async (menuId) => {
     return await AppDataSource.getRepository(Image).find({
-        where:{menu:{id:menuId}},
-        relations:["menu"]
+        where: { menu: { id: menuId } },
+        relations: ["menu"]
     })
 }
 
-export const getImagesController=async(req,res)=>{
-    try{
-        const {menuId}=req.params;
+export const getImagesController = async (req, res) => {
+    try {
+        const { menuId } = req.params;
         const decryptedMenuId = decryptID(menuId);
         const cachedImages = await redisClient.get(`images:${decryptedMenuId}`);
         if (cachedImages) {
@@ -24,7 +25,7 @@ export const getImagesController=async(req,res)=>{
             // return res.json(JSON.parse(cachedImages));
             return responseHandler.success(res, JSON.parse(cachedImages), "Images fetched successfully", 200);
         }
-        const images=await getImagesbyMenuID(decryptedMenuId);
+        const images = await getImagesbyMenuID(decryptedMenuId);
         try {
             await redisClient.setex(`images:${decryptedMenuId}`, 3600, JSON.stringify(images));
         } catch (redisError) {
@@ -32,7 +33,7 @@ export const getImagesController=async(req,res)=>{
         }
         // res.json(images);
         return responseHandler.success(res, images, "Images fetched successfully", 200);
-    }catch(err){
+    } catch (err) {
         // res.status(500).json({message:err.message})
         return responseHandler.error(res, err, "Server Error", 500);
     }
@@ -44,7 +45,7 @@ export const getImagesController=async(req,res)=>{
 
 //Upload Image
 
-const addImagesByMenuId=async(menuId,imageUrl)=>{
+const addImagesByMenuId = async (menuId, imageUrl) => {
     const image = AppDataSource.getRepository(Image).create({ menu: { id: menuId }, imageUrl });
     return await AppDataSource.getRepository(Image).save(image);
 }
@@ -54,7 +55,7 @@ export const addImageController = async (req, res) => {
         console.log("Menu ID:", req.body.menuId);
 
         const { menuId } = req.body;
-        const decryptedMenuId = decryptID(menuId); 
+        const decryptedMenuId = decryptID(menuId);
         if (!req.file) {
             // return res.status(400).json({ message: "No file uploaded!" });
             return responseHandler.badRequest(res, "No file uploaded!", 400);
@@ -78,14 +79,14 @@ export const addImageController = async (req, res) => {
 };
 
 export const attachController = async (req, res) => {
-  
+
     if (!req.file) {
-      return res.status(400).json({ message: "No file uploaded!" });
+        return res.status(400).json({ message: "No file uploaded!" });
     }
-    const {senderId, receiverId} = req.body;
+    const { senderId, receiverId } = req.body;
     const fileUrl = `http://localhost:8081/attach/${req.file.filename}`;
-    const db=await getMongoDb();
-    const msg={
+    const db = await getMongoDb();
+    const msg = {
         senderId: Number(senderId),
         receiverId: Number(receiverId),
         file: fileUrl,
@@ -96,39 +97,53 @@ export const attachController = async (req, res) => {
 }
 
 //pixel image controller
-export const HandleImage=async (req, res) => {
+export const HandleImage = async (req, res) => {
     const { widthSize, heightSize, resizeToFileSize } = req.body;
     const file = req.file;
-  
-    if (!file) return  responseHandler.badRequest(res, "No file uploaded!", 400);
+
+    if (!file) return responseHandler.badRequest(res, "No file uploaded!", 400);
     const originalPath = path.join('images', file.filename + path.extname(file.originalname));
     const resizedPath = path.join('images', 'resized_' + file.filename + path.extname(file.originalname));
-  
+
     fs.renameSync(file.path, originalPath);
-  
+
     if (resizeToFileSize) {
-      let targetSizeKB = parseInt(resizeToFileSize);
-      let compressionQuality = 80;
-      let sizeInKB = (fs.statSync(originalPath).size / 1024).toFixed(2);
-  
-      while (sizeInKB > targetSizeKB && compressionQuality > 10) {
+        let targetSizeKB = parseInt(resizeToFileSize);
+        let minQuality = 10;
+        let maxQuality = 99;
+        let bestQuality = maxQuality;
+        let sizeInKB = (fs.statSync(originalPath).size / 1024).toFixed(2);
+        console.log("Original Size", sizeInKB);
+        while (minQuality <= maxQuality) {
+            const midQuality = Math.floor((minQuality + maxQuality) / 2);
+            await sharp(originalPath)
+                .jpeg({ quality: midQuality })
+                .toFile(resizedPath);
+
+            sizeInKB = (fs.statSync(resizedPath).size / 1024).toFixed(2);
+            console.log("Tried Quality", midQuality, "| Size:", sizeInKB, "KB");
+
+            if (sizeInKB > targetSizeKB) {
+                maxQuality = midQuality - 1;
+            } else {
+                bestQuality = midQuality;
+                minQuality = midQuality + 1;
+            }
+        }
+
+        // Re-save using best quality found (optional, in case last one overshot)
         await sharp(originalPath)
-          .jpeg({ quality: compressionQuality })
-          .toFile(resizedPath);
-  
-        sizeInKB = (fs.statSync(resizedPath).size / 1024).toFixed(2);
-        compressionQuality -= 10;
-      }
+            .jpeg({ quality: bestQuality })
+            .toFile(resizedPath);
     } else {
-      // Resize based on width and height
-      await sharp(originalPath)
-        .resize(Number(widthSize), Number(heightSize))
-        .toFile(resizedPath);
+        // Resize based on width and height
+        await sharp(originalPath)
+            .resize(Number(widthSize), Number(heightSize))
+            .toFile(resizedPath);
     }
-  
+
     return responseHandler.success(res, {
-      original: originalPath,
-      resized: resizedPath,
+        original: originalPath,
+        resized: resizedPath,
     }, 'Image uploaded and resized successfully', 201);
-  };
-  
+};
