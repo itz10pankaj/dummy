@@ -8,7 +8,7 @@ const ImageReader = () => {
   const [height, setHeight] = useState('');
   const [resizeToFileSize, setResizeToFileSize] = useState(false); 
   const [targetFileSize, setTargetFileSize] = useState(100); 
-
+  const [loading, setLoading] = useState(false);
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -67,6 +67,7 @@ const ImageReader = () => {
     }
 
     try {
+      setLoading(true);
       const res = await axios.post('http://localhost:8081/api/image-handle', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
@@ -77,6 +78,8 @@ const ImageReader = () => {
     } catch (err) {
       console.error(err);
       alert('Upload failed');
+    }finally {
+      setLoading(false);
     }
   };
 
@@ -137,13 +140,19 @@ const ImageReader = () => {
           </>
         )}
       </div>
-
-      <button
+      
+      {!loading ? <button
         onClick={handleSubmit}
         className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded"
       >
         Upload
+      </button>:
+      <button
+        className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded"
+      >
+        Uploading
       </button>
+        }
     </div>
   );
 };

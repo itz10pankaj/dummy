@@ -238,32 +238,20 @@ export const bulkUploadItems = async (req, res) => {
   }
 };
 
-
-
 export const bulkUploadItemsUsingWorker = async (req, res) => {
   try {
-    console.log("Streaming upload started...");
-    console.log("Streaming upload started...");
-    console.time(" Total Time");
-    const startTime = Date.now();
-    console.log(`Insertion started at: ${new Date(startTime).toLocaleString()}`);
-
+    const rowsStatus = [];
     const latitude = req.body.latitude;
     const longitude = req.body.longitude;
-
-    if (!latitude || !longitude) {
-      return responseHandler.badRequest(res, "Location is required", 400);
-    }
-    if (!req.file) {
-      return responseHandler.badRequest(res, "CSV file not found", 400);
-    }
+    if (!latitude || !longitude) return responseHandler.badRequest(res, "Location is required", 400);
+    if (!req.file) return responseHandler.badRequest(res, "CSV file not found", 400);
 
     const filePath = path.resolve(req.file.path);
+    const startTime = Date.now();
 
     const CPU_CORES = Math.max(4, cpus().length - 1);
-    const TOTAL_WORKERS = Math.min(CPU_CORES, 8);
+    const TOTAL_WORKERS = Math.min(CPU_CORES, 3);
     const workerPool = [];
-
 
     for (let i = 0; i < TOTAL_WORKERS; i++) {
       const worker = new Worker(path.join(path.dirname(__filename), '../utlis/worker.js'));
@@ -271,46 +259,84 @@ export const bulkUploadItemsUsingWorker = async (req, res) => {
     }
 
     let currentWorkerIndex = 0;
+    
+    const categoryRepository = AppDataSource.getRepository(Category);
+    const categoriesCache = new Map();
+
+    const handleWorkerMessage = async (message) => {
+      if (message.type === 'batch') {
+        const newItems = [];
+
+        for (const { name, latitude, longitude, categoryId } of message.data) {
+          let category = categoriesCache.get(categoryId);
+          if (!category) {
+            category = await categoryRepository.findOne({ where: { id: categoryId } });
+            if (category) categoriesCache.set(categoryId, category);
+          }
+
+          if (!category) {
+            rowsStatus.push({ name, latitude, longitude, status: "Category Not Found" });
+            continue;
+          }
+
+          newItems.push({ name, latitude, longitude, category });
+          // console.log("rowStatus Push hoga")
+          rowsStatus.push({ name, latitude, longitude, status: "Inserted" });
+          // console.log("rowStatus Push hoga gya",rowsStatus)
+        }
+
+        if (newItems.length > 0) {
+          const values = newItems.map(item =>
+            `('${item.name.replace(/'/g, "''")}', ${item.latitude}, ${item.longitude}, '${item.category.id}')`
+          ).join(',');
+
+          const sql = `
+            INSERT INTO ins_items (name, latitude, longitude, categoryId)
+            VALUES ${values}
+          `;
+          AppDataSource.query(sql);
+        }
+      }
+    };
+
+    const workerResults = workerPool.map((worker) => {
+      let pendingPromises = [];
+      return new Promise((resolve, reject) => {
+        worker.on('message', async (message) => {
+          if (message.type === 'batch') {
+            const promise = handleWorkerMessage(message);
+        pendingPromises.push(promise);
+        promise.finally(() => {
+          // remove resolved promise
+          pendingPromises = pendingPromises.filter(p => p !== promise);
+        });
+          }
+          else if (message.type === 'done'){
+            Promise.all(pendingPromises).then(resolve).catch(reject);
+          }
+        });
+        worker.on('error', reject);
+        worker.on('exit', (code) => {
+          if (code !== 0) reject(new Error(`Worker exited with code ${code}`));
+        });
+      });
+    });
 
     const distributor = new Transform({
       objectMode: true,
       transform(row, encoding, callback) {
         const worker = workerPool[currentWorkerIndex];
         worker.postMessage({ type: 'row', row, latitude, longitude });
-        currentWorkerIndex = (currentWorkerIndex + 1) % TOTAL_WORKERS; // Round robin
+        currentWorkerIndex = (currentWorkerIndex + 1) % TOTAL_WORKERS;
         callback();
       }
     });
 
-    // Step 3: Listen for workers to finish
-    const workerResults = [];
-    for (const worker of workerPool) {
-      const resultPromise = new Promise((resolve, reject) => {
-        const rows = [];
-        worker.on('message', (message) => {
-          if (message.type === 'rowResult') {
-            rows.push(message.data);
-          } else if (message.type === 'done') {
-            resolve(rows);
-          }
-        });
-        worker.on('error', reject);
-        worker.on('exit', (code) => {
-          if (code !== 0) {
-            reject(new Error(`Worker stopped with exit code ${code}`));
-          }
-        });
-      });
-      workerResults.push(resultPromise);
-    }
-
-    // Step 4: Start the file stream
     await new Promise((resolve, reject) => {
       fs.createReadStream(filePath)
         .pipe(csv())
         .pipe(distributor)
         .on('finish', () => {
-          // Once file read finishes, notify all workers
           for (const worker of workerPool) {
             worker.postMessage({ type: 'complete' });
           }
@@ -318,32 +344,23 @@ export const bulkUploadItemsUsingWorker = async (req, res) => {
         })
         .on('error', reject);
     });
-    
-    const results = await Promise.all(workerResults);
-    
-    const mergedRows = results.flat();
-    
+
+    await Promise.all(workerResults);
+
     const csvString = [
       ["name", "latitude", "longitude", "status"],
-      ...mergedRows.map(row => [row.name, row.latitude, row.longitude, row.status])
-    ]
-    .map(row => row.join(","))
-    .join("\n");
-    
+      ...rowsStatus.map(row => [row.name, row.latitude, row.longitude, row.status])
+    ].map(row => row.join(",")).join("\n");
+
     const endTime = Date.now();
-    const timeTaken = endTime - startTime; 
-    console.log(`Insertion completed at: ${new Date(endTime).toLocaleString()}`);
-    console.log(`Total time taken for insertion: ${timeTaken} milliseconds`);
-    console.timeEnd(" Total Time"); 
+    console.log(`Insertion completed in ${(endTime - startTime) / 1000} seconds`);
     res.setHeader("Content-disposition", "attachment; filename=result.csv");
     res.setHeader("Content-Type", "text/csv");
     res.status(201).send(csvString);
 
-    // Clean up
     fs.unlinkSync(filePath);
-
   } catch (err) {
     console.error("Bulk upload error:", err);
     return responseHandler.error(res, err, "Server Error", 500);
   }
-};  
+};
