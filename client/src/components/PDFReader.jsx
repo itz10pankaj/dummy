@@ -140,7 +140,7 @@ const PDFViewer = () => {
     document.body.appendChild(element);
 
     try {
-      const html2pdf = (await import("html2pdf.js")).default;
+      // const html2pdf = (await import("html2pdf.js")).default;
 
       const opt = {
         margin: [0.5, 0, 0.5, 0], // top, left, bottom, right

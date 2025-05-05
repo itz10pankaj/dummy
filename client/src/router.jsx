@@ -8,6 +8,7 @@ import Test from "./pages/Test";
 import Details from "./pages/Details";
 import PDFViewer from "./components/PDFReader";
 import ImageReader from "./components/ImageReader";
+import Form from "./pages/Form";
 const Router = ({initialData}) => {
   return (
     <Routes>
@@ -19,6 +20,7 @@ const Router = ({initialData}) => {
       <Route path="/details" element={<ProtectedRoute initialUser={initialData?.user}><Details initialData={initialData} /></ProtectedRoute>} />
       <Route path="/pdf-handle" element={<PDFViewer />} />
       <Route path="/image-handle" element={<ImageReader />} />
+      <Route path="/form" element={<Form />} />
     </Routes>
   );
 };
