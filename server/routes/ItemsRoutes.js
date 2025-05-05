@@ -6,6 +6,6 @@ const router = express.Router()
 const upload = multer({ dest: "uploads/" });
 router.get("/items/:categoryId", getItems)
 router.post("/items/:categoryId", addItem)
-router.post("/bulk-upload",upload.single("file"),bulkUploadItemsUsingWorker)
+router.post("/bulk-upload",upload.single("file"),bulkUploadItems)
 
 export default router
