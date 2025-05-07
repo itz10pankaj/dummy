@@ -3,9 +3,11 @@ import { createSlice } from "@reduxjs/toolkit";
 const formSlice = createSlice({
   name: "form",
   initialState: {
-    name: "",
-    email: "",
-    password: "",
+    AadharNumber: "",
+    PanNumber: "",
+    Contact: "",
+    countryCode: "+91",
+    text:""
   },
   reducers: {
     updateForm: (state, action) => {

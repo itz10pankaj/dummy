@@ -362,6 +362,36 @@
         }
       }
     },
+    "/image-handle": {
+      "post": {
+        "description": "",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "widthSize": {
+                  "example": "any"
+                },
+                "heightSize": {
+                  "example": "any"
+                },
+                "resizeToFileSize": {
+                  "example": "any"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/locations": {
       "get": {
         "description": "",
@@ -504,6 +534,16 @@
             }
           }
         ],
+        "responses": {
+          "201": {
+            "description": "Created"
+          }
+        }
+      }
+    },
+    "/bulk-upload-insurance-premiums": {
+      "post": {
+        "description": "",
         "responses": {
           "201": {
             "description": "Created"
