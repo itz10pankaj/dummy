@@ -16,6 +16,11 @@ import { ChangeLogger } from "../dist/suscriber.js";
 import { Template } from "../models/Template.js";
 import { InsuranceBasicPremium } from "../models/Premium.js";
 import { CacheInvalidationSubscriber } from "../utlis/Cache-invalidatoin.js";
+
+import { InsurancePartner } from "../models/partner.js";
+import { InsurancePartnerInsurerMapping } from "../models/partner_insuruer_mapping.js";
+import { InsuranceInsurer } from "../models/Insurer.js";
+
 dotenv.config();
 export const AppDataSource = new DataSource({
     type: "mysql",
@@ -26,9 +31,9 @@ export const AppDataSource = new DataSource({
     database: process.env.DB_NAME,
     synchronize: true,  
     logging: false,
-    entities: [User,Menu,Content,Course,Image,MetaTitle,Location,Category,Item,Photo,UserLogs,Template,InsuranceBasicPremium],
+    entities: [User,Menu,Content,Course,Image,MetaTitle,Location,Category,Item,Photo,UserLogs,Template,InsuranceBasicPremium,InsurancePartner,InsurancePartnerInsurerMapping,InsuranceInsurer],
     subscribers: [CacheInvalidationSubscriber,ChangeLogger],
-    charset: "utf8mb4", // Add this line
+    charset: "utf8mb4", 
     poolSize: 20,
     extra: {
         charset: "utf8mb4_unicode_ci",
