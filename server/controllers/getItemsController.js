@@ -9,7 +9,8 @@ import fs from "fs"
 import path from "path"
 import csv from "csv-parser"
 import { fileURLToPath } from "url";
-import { Transform } from "stream";
+import { Transform, PassThrough } from "stream";
+import { pipeline } from "stream/promises";
 const __filename = fileURLToPath(import.meta.url);
 import { Worker } from 'worker_threads';
 
@@ -259,7 +260,7 @@ export const bulkUploadItemsUsingWorker = async (req, res) => {
     }
 
     let currentWorkerIndex = 0;
-    
+
     const categoryRepository = AppDataSource.getRepository(Category);
     const categoriesCache = new Map();
 
@@ -305,13 +306,13 @@ export const bulkUploadItemsUsingWorker = async (req, res) => {
         worker.on('message', async (message) => {
           if (message.type === 'batch') {
             const promise = handleWorkerMessage(message);
-        pendingPromises.push(promise);
-        promise.finally(() => {
-          // remove resolved promise
-          pendingPromises = pendingPromises.filter(p => p !== promise);
-        });
+            pendingPromises.push(promise);
+            promise.finally(() => {
+              // remove resolved promise
+              pendingPromises = pendingPromises.filter(p => p !== promise);
+            });
           }
-          else if (message.type === 'done'){
+          else if (message.type === 'done') {
             Promise.all(pendingPromises).then(resolve).catch(reject);
           }
         });
@@ -364,3 +365,94 @@ export const bulkUploadItemsUsingWorker = async (req, res) => {
     return responseHandler.error(res, err, "Server Error", 500);
   }
 };
+
+
+
+
+export const UploadText = async (req, res) => {
+  try {
+    if (!req.file) {
+      return responseHandler.badRequest(res, "TXT file not found", 400);
+    }
+
+    const startTime = Date.now();
+    const startMemory = process.memoryUsage();
+    const filePath = path.resolve(req.file.path);
+
+    const readStream = fs.createReadStream(filePath, {
+      encoding: 'utf-8',
+      highWaterMark: 64 * 1024       // ye chich read Stream mai chunk size ko controll kregi
+    });
+
+    res.setHeader("Content-disposition", "attachment; filename=modified.txt");
+    res.setHeader("Content-Type", "text/plain");
+
+    let leftover = '';
+    let buffer = [];
+    const FLUSH_THRESHOLD = 1000;
+
+    readStream.on('data', (chunk) => {
+      const data = leftover + chunk;
+      let lineStart = 0;
+
+      for (let i = 0; i < data.length; i++) {
+        if (data[i] === '\n') {
+          const line = data.slice(lineStart, i);
+          if (line.length > 0) { 
+            buffer.push(line.charAt(0).toUpperCase() + line.slice(1));
+          }
+
+          if (buffer.length >= FLUSH_THRESHOLD) {
+            res.write(buffer.join('\n') + '\n'); 
+            buffer = [];
+          }
+
+          lineStart = i + 1;
+        }
+      }
+
+      leftover = data.slice(lineStart);
+    });
+
+    readStream.on('end', () => {
+      // Process remaining leftover
+      if (leftover.length > 0) {
+        buffer.push(leftover.charAt(0).toUpperCase() + leftover.slice(1));
+      }
+
+      // Write remaining buffer
+      if (buffer.length > 0) {
+        res.write(buffer.join('\n') + '\n');
+      }
+
+      res.end();
+
+      // Clean up file
+      fs.unlink(filePath, (err) => {
+        if (err) console.error('Error deleting file:', err);
+      });
+    });
+
+    readStream.on('error', (err) => {
+      console.error('Error reading input file:', err);
+      res.status(500).send('Error processing file');
+    });
+
+    res.on('finish', () => {
+      const endTime = Date.now();
+      const endMemory = process.memoryUsage();
+
+      console.log(`Processing completed in ${(endTime - startTime) / 1000}s`);
+      console.log(`Memory usage: ${(endMemory.heapUsed - startMemory.heapUsed) / 1024 } KB`);
+    });
+
+  } catch (err) {
+    console.error("Bulk text processing error:", err);
+    return responseHandler.error(res, err, "Server Error", 500);
+  }
+};
+
+
+
+
+

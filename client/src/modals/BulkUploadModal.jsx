@@ -39,50 +39,50 @@ const BulkUploadForm = ({ encryptedCategoryId, updateItems }) => {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.setAttribute("download", "uploaded-items.csv");
+      link.setAttribute("download", "uploaded-items.txt");
       document.body.appendChild(link);
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
-      const text = await blob.text();
+      // const text = await blob.text();
 
       // Parse CSV
-      const parsed = Papa.parse(text, {
-        header: true,
-        skipEmptyLines: true
-      });
+      // const parsed = Papa.parse(text, {
+      //   header: true,
+      //   skipEmptyLines: true
+      // });
 
-      const newItems = parsed.data.filter(item => item.status === "Inserted");
-      updateItems((prevItems) => [...prevItems, ...newItems]);
-      if (newItems.length > 0) {
-        dispatch(setItems({
-          categoryId: encryptedCategoryId,
-          items: [...items, ...newItems]
-        }));
-        toast.success(`${newItems.length} items added successfully!`, {
-          position: "top-right",
-          autoClose: 1000
-        });
-        const log = await addUserLogApi({
-          userId: user?.id,
-          action: `Bulk Items Added`,
-          status: true
-        });
-        dispatch(setLogs({ userId: [log, ...logsFromStore] }));
-      }
-      else {
-        toast.error("Duplicate Items", {
-          position: "top-right",
-          autoClose: 1000
-        });
-        const log = await addUserLogApi({
-          userId: user?.id,
-          action: `Duplicate Items`,
-          status: false
-        });
-        dispatch(setLogs({ userId: [log, ...logsFromStore] }));
+      // const newItems = parsed.data.filter(item => item.status === "Inserted");
+      // updateItems((prevItems) => [...prevItems, ...newItems]);
+      // if (newItems.length > 0) {
+      //   dispatch(setItems({
+      //     categoryId: encryptedCategoryId,
+      //     items: [...items, ...newItems]
+      //   }));
+      //   toast.success(`${newItems.length} items added successfully!`, {
+      //     position: "top-right",
+      //     autoClose: 1000
+      //   });
+      //   const log = await addUserLogApi({
+      //     userId: user?.id,
+      //     action: `Bulk Items Added`,
+      //     status: true
+      //   });
+      //   dispatch(setLogs({ userId: [log, ...logsFromStore] }));
+      // }
+      // else {
+      //   toast.error("Duplicate Items", {
+      //     position: "top-right",
+      //     autoClose: 1000
+      //   });
+      //   const log = await addUserLogApi({
+      //     userId: user?.id,
+      //     action: `Duplicate Items`,
+      //     status: false
+      //   });
+      //   dispatch(setLogs({ userId: [log, ...logsFromStore] }));
         
-      }
+      // }
 
 
     } catch (error) {
@@ -125,7 +125,7 @@ const BulkUploadForm = ({ encryptedCategoryId, updateItems }) => {
         <input
           id="file-upload"
           type="file"
-          accept=".csv"
+          accept=".txt"
           onChange={(e) => setFile(e.target.files[0])}
           onClick={(e) => (e.target.value = null)}
           className="hidden"
