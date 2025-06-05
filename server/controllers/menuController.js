@@ -4,6 +4,7 @@ import { Course } from "../models/Courses.js";
 import { decryptID } from "../middleware/urlencrypt.js";
 import {redisClient} from "../config/redis-client.js"
 import { responseHandler } from "../utlis/responseHandler.js";
+import {decryptPayload,encryptPayload} from "../utlis/Decryption.js";
 const getMenusByCourseId = async (courseId) => {
     return await AppDataSource.getRepository(Menu).find({
         where: { course: { id: courseId } },
@@ -52,7 +53,12 @@ export const addMenu = async (req, res) => {
             return responseHandler.badRequest(res, "Invalid Course ID", 400);
         }
 
-        const { name } = req.body;
+        const encryptedData = req.body.data;
+        if (!encryptedData) {
+            return responseHandler.badRequest(res, "Encrypted data is required", 400);
+        }
+
+        const { name } = decryptPayload(encryptedData);
 
         if (!name) {
             // return res.status(400).json({ message: "Menu name is required" });
@@ -79,9 +85,8 @@ export const addMenu = async (req, res) => {
             relations: ["course"]
         });
         await redisClient.setex(`Menu:${decryptedCourseId}`, 3600, JSON.stringify(updatedMenus));
-
-        // res.status(201).json(newMenu);
-        return responseHandler.success(res, newMenu, "Menu added successfully", 201);
+        const encryptedResponse = encryptPayload(newMenu);
+        return responseHandler.success(res, encryptedResponse, "Menu added successfully", 201);
     } catch (err) {
         console.error("Error adding menu:", err);
         // res.status(500).json({ message: err.message });

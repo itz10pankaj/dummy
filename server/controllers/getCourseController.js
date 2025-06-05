@@ -2,6 +2,7 @@ import { AppDataSource } from "../config/data-source.js";
 import { Course } from "../models/Courses.js";
 import { redisClient } from "../config/redis-client.js";
 import { responseHandler } from "../utlis/responseHandler.js";
+import {decryptPayload,encryptPayload} from "../utlis/Decryption.js";
 const getAllCourses=async()=>{
     return await AppDataSource.getRepository(Course).find();
 }
@@ -29,12 +30,13 @@ export const getCourses=async(req,res)=>{
 
 export const addCourse = async (req, res) => {
     try {
-        const { name } = req.body;
-
-        if (!name) {
+        // const { name } = req.body;
+        const encryptedData = req.body.data;
+        if (!encryptedData) {
             // return res.status(400).json({ message: "Course name is required" });
             return responseHandler.badRequest(res, "Course name is required", 400);
         }
+        const { name } = decryptPayload(encryptedData);
 
         const courseRepository = AppDataSource.getRepository(Course);
 
@@ -48,13 +50,13 @@ export const addCourse = async (req, res) => {
         // Create new course
         const newCourse = courseRepository.create({ name });
         await courseRepository.save(newCourse);
-
+        const encryptedResponse = encryptPayload(newCourse);
         // Update Redis cache
         const allCourses = await getAllCourses();
         await redisClient.setex("all_courses", 3600, JSON.stringify(allCourses));
 
         // res.status(201).json(newCourse);
-        return responseHandler.success(res, newCourse, "Course added successfully", 201);
+        return responseHandler.success(res, encryptedResponse, "Course added successfully", 201);
     } catch (err) {
         console.error("Error adding course:", err);
         // res.status(500).json({ message: err.message });

@@ -64,6 +64,7 @@ useEffect(() => {
         latitude: location.latitude,
         longitude: location.longitude
       });
+      console.log("hehe",response)
       dispatch(login(response.user));
       toast.success("Login Successful!", { position: "top-right", autoClose: 2000 });
       setTimeout(() => {

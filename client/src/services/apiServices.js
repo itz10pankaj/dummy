@@ -1,7 +1,30 @@
 // src/api/courseApi.js
 import axios from "axios";
+import { encryptPayload,decryptPayload } from "./UrlEncode";
+
+
+// axios.interceptors.request.use(
+//   config => {
+//     if (config.data) {
+//       config.data = { data: encryptPayload(config.data) };
+//     }
+//     return config;
+//   },
+//   error => Promise.reject(error)
+// );
 axios.interceptors.response.use(
     response => response,
+//     response => {
+//     if (response.data && response.data.data) {
+//       try {
+//         response.data.data = decryptPayload(response.data.data);
+//       } catch (e) {
+//         // If not decryptable, leave as is
+//         console.error("Decryption failed:", e);
+//       }
+//     }
+//     return response;
+//   },
     error => {
       if (error.response) {
         // Server responded with a status code outside 2xx
@@ -57,9 +80,11 @@ export async function getCourses(user) {
 }
 export async function addCourseApi(course) {
     if (!course) return null;
+    const encryptedData = encryptPayload(course);
     try {
-        const res = await axios.post(`${API_BASE}/courses`, course);
-        return res.data?.data || null;
+        const res = await axios.post(`${API_BASE}/courses`, { data: encryptedData });
+        const decryptedData = decryptPayload(res.data.data);
+        return decryptedData || null;
     }
     catch (err) {
         console.error("Error adding course:", err);
@@ -78,9 +103,11 @@ export async function getMenus(encryptedCourseId) {
 }
 export async function addMenuApi(menu, encryptedCourseId) {
     if (!menu) return null;
+    const encryptedData = encryptPayload(menu);
     try {
-        const res = await axios.post(`${API_BASE}/menu/${encryptedCourseId}`, menu);
-        return res.data?.data || null;
+        const res = await axios.post(`${API_BASE}/menu/${encryptedCourseId}`, { data: encryptedData });
+        const decryptedData = decryptPayload(res.data.data);
+        return decryptedData || null;
     }
     catch (err) {
         console.error("Error adding course:", err);
@@ -204,7 +231,8 @@ export const uploadImage = async (file, menuId) => {
 
 export const loginUser = async (payload) => {
     try {
-        const res = await axios.post(`${API_BASE}/auth/login`, payload);
+        const encryptedData = encryptPayload(payload);
+        const res = await axios.post(`${API_BASE}/auth/login`, {encryptedData});
         return res.data;
     } catch (error) {
         console.error("Login failed:", error.response?.data || error.message);

@@ -4,6 +4,7 @@ import { User } from "../models/User.js"
 import { OAuth2Client } from "google-auth-library";
 import { responseHandler } from "../utlis/responseHandler.js";
 import dotenv from "dotenv";
+import {decryptPayload,encryptPayload} from "../utlis/Decryption.js";
 dotenv.config();
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -39,22 +40,23 @@ export const registerUser = async (req, res) => {
 // Login User
 export const loginUser = async (req, res) => {
     try {
-
+         const decryptedData = decryptPayload(req.body.encryptedData);
+        const { email, password, latitude, longitude } = decryptedData;
         const userRepository = AppDataSource.getRepository(User);
-        const user = await userRepository.findOneBy({ email: req.body.email });
+        const user = await userRepository.findOneBy({ email});
 
         if (!user) {
             // return res.status(401).json({ Error: "User not found" });
             return responseHandler.notFound(res, "User not found", 404);
         }
 
-        const isMatch =  await bcrypt.compare(req.body.password.toString(), user.password);
+        const isMatch =  await bcrypt.compare(password.toString(), user.password);
         if (!isMatch) {
             // return res.status(401).json({ Error: "Invalid Credentials" });
             return responseHandler.unauthorized(res, "Invalid Credentials", 401);
         }
-        user.latitude = req.body.latitude;
-        user.longitude = req.body.longitude;
+        user.latitude = latitude;
+        user.longitude = longitude;
         await userRepository.save(user); // Save updated location if needed
         console.log("Login Successful:", user.email);
         console.log(user);
@@ -66,28 +68,18 @@ export const loginUser = async (req, res) => {
           latitude: user.latitude,
           longitude: user.longitude,
         };
-        // Set cookie with user data
-        console.log("JSON version:", JSON.stringify({
-          id: user.id, 
-          name: user.name, 
-          email: user.email, 
-          role: user.role,
-          latitude: user.latitude,
-          longitude: user.longitude,
-        }));
-                
-        if(user) {
-        res.cookie("user", JSON.stringify(cookieUser), 
-            {
-            path: "/",
-            maxAge: 24 * 60 * 60 * 1000, 
-            httpOnly: false, 
-            // secure: process.env.NODE_ENV === "production",
-            secure: false,
-            sameSite: "strict",
-        });
-      }
 
+        if (user) {
+            res.cookie("user", JSON.stringify(cookieUser), {
+                path: "/",
+                maxAge: 24 * 60 * 60 * 1000,
+                httpOnly: false,
+                // secure: process.env.NODE_ENV === "production",
+                secure: false,
+                sameSite: "strict",
+            });
+        }
+        // const encryptedResponse = encryptPayload(user);
         return res.status(200).json({ Status: "Success", user });
         // return responseHandler.success(res, user, "Login Successful", 200);
 
