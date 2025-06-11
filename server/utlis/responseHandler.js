@@ -23,6 +23,12 @@ export const responseHandler={
         message 
     });
   },
+  notFound: (res, message = "Resource not found",statusCode=404) => {
+    return res.status(statusCode).json({ 
+        status: "error", 
+        message 
+    });
+  },
 
   unauthorized: (res, message = "Unauthorized access",statusCode=401) => {
     return res.status(statusCode).json({ 

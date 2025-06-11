@@ -14,9 +14,14 @@ const saltRounds = 10;
 // Register User
 export const registerUser = async (req, res) => {
     try {
+      const userRepository = AppDataSource.getRepository(User);
+        const existingUser = await userRepository.findOneBy({ email: req.body.email });
+        if (existingUser) {
+            return res.status(409).json({ message: "User already exists" }); // 409 Conflict
+        }
+
         const hashedPassword = await bcrypt.hash(req.body.password.toString(), saltRounds);
 
-        const userRepository = AppDataSource.getRepository(User);
         const newUser = userRepository.create({
             name: req.body.name,
             email: req.body.email,
@@ -53,7 +58,7 @@ export const loginUser = async (req, res) => {
         const isMatch =  await bcrypt.compare(password.toString(), user.password);
         if (!isMatch) {
             // return res.status(401).json({ Error: "Invalid Credentials" });
-            return responseHandler.unauthorized(res, "Invalid Credentials", 401);
+            return responseHandler.unauthorized(res, "Unauthorized access", 401);
         }
         user.latitude = latitude;
         user.longitude = longitude;
@@ -84,7 +89,7 @@ export const loginUser = async (req, res) => {
         // return responseHandler.success(res, user, "Login Successful", 200);
 
     } catch (error) {
-        console.error("Error in loginUser:", error);
+        console.log("Error in loginUser:", error);
         // return res.status(500).json({ Error: "Server error" });
         return responseHandler.error(res, error, "Server error", 500);
     }

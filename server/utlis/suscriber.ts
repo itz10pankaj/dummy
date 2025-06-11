@@ -3,9 +3,9 @@ import  {connectToMongo, getMongoDb}  from "../config/mogodb";
 
 @EventSubscriber()
 export class ChangeLogger implements EntitySubscriberInterface {
-    constructor() {
-        connectToMongo(); // Ensure MongoDB connection is established
-    }
+    // constructor() {
+    //     connectToMongo(); // Ensure MongoDB connection is established
+    // }
 
     /**
      * Listen to INSERT events
@@ -42,7 +42,8 @@ async logChange(operation: string, event: {
         entity?: any;
         databaseEntity: any; metadata: { tableName: any; }; 
 }) {
-        const db = getMongoDb();
+            const db = await connectToMongo();
+        // const db = getMongoDb();
         const collection = db.collection("change_logs");
 
         const oldData =

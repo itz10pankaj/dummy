@@ -11,7 +11,7 @@ let db = null;
 export const connectToMongo = async () => {
   if (!mongoClient) {
     try {
-      mongoClient = new MongoClient(mongoUri, { useUnifiedTopology: true });
+      mongoClient = new MongoClient(mongoUri);
       await mongoClient.connect();
       db = mongoClient.db(mongoDbName);
       console.log("Connected to MongoDB");

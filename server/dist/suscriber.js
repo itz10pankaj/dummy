@@ -10,9 +10,9 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 import { EventSubscriber } from "typeorm";
 import { connectToMongo, getMongoDb } from "../config/mogodb.js";
 let ChangeLogger = class ChangeLogger {
-    constructor() {
-        connectToMongo(); // Ensure MongoDB connection is established
-    }
+    // constructor() {
+    //     connectToMongo(); // Ensure MongoDB connection is established
+    // }
     /**
      * Listen to INSERT events
      */
@@ -42,7 +42,8 @@ let ChangeLogger = class ChangeLogger {
      * Log the change into MongoDB
      */
     async logChange(operation, event) {
-        const db = getMongoDb();
+        // const db = getMongoDb();
+        const db = await connectToMongo();
         const collection = db.collection("change_logs");
         const oldData = operation === "UPDATE" || operation === "DELETE"
             ? event.databaseEntity
