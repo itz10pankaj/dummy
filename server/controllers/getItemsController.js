@@ -15,7 +15,7 @@ const __filename = fileURLToPath(import.meta.url);
 import { Worker } from 'worker_threads';
 
 
-const getItemsByCategoryId = async (categoryId) => {
+export const getItemsByCategoryId = async (categoryId) => {
   return await AppDataSource.getRepository(Item).find({
     where: { category: { id: categoryId } },
     relations: ["category"],

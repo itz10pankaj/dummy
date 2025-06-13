@@ -5,7 +5,7 @@ import { decryptID } from "../middleware/urlencrypt.js";
 import {redisClient} from "../config/redis-client.js"
 import { responseHandler } from "../utlis/responseHandler.js";
 import {decryptPayload,encryptPayload} from "../utlis/Decryption.js";
-const getMenusByCourseId = async (courseId) => {
+export const getMenusByCourseId = async (courseId) => {
     return await AppDataSource.getRepository(Menu).find({
         where: { course: { id: courseId } },
         relations: ["course"]
@@ -21,6 +21,12 @@ export const getMenu=async(req,res)=>{
         if (!courseId) {
             // return res.status(400).json({ error: "Course ID is required" });
             return responseHandler.badRequest(res, "Course ID is required", 400);
+        }
+        const courseRepository = AppDataSource.getRepository(Course);
+        const existingCourse = await courseRepository.findOne({ where: { id: decryptedCourseId } });
+        if (!existingCourse) {
+            // return res.status(404).json({ message: "Course not found" });
+            return responseHandler.badRequest(res, "Course not found", 404);
         }
         const cachedData = await redisClient.get(`Menu:${decryptedCourseId}`);
         if (cachedData) {
@@ -50,7 +56,7 @@ export const addMenu = async (req, res) => {
         
         if (!decryptedCourseId) {
             // return res.status(400).json({ error: "Invalid Course ID" });
-            return responseHandler.badRequest(res, "Invalid Course ID", 400);
+            return responseHandler.badRequest(res, "Course ID missing", 400);
         }
 
         const encryptedData = req.body.data;
