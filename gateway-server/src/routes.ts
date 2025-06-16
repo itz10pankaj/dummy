@@ -13,6 +13,6 @@ export const routes: RouteConfig[] = [
   {
     prefix: '/backend2',
     target: 'http://localhost:3001',
-    middlewares: ['LoggerMiddleware', 'AuthMiddleware'],
+    middlewares: ['LoggerMiddleware', 'AuthMiddleware','CryptoMiddleware'],
   },
 ];

@@ -2,7 +2,6 @@ import { All, Controller, Req, Res } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import { routes } from '../routes';
-import { decryptPayload, encryptPayload } from 'src/utils/CryptoJS';
 @Controller()
 export class ProxyController {
   @All('*')
@@ -16,43 +15,31 @@ export class ProxyController {
           selfHandleResponse: true,
           pathRewrite: (path) => path.replace(route.prefix, ''),
           on: {
-            proxyReq: (proxyReq, req: Request, res: Response) => {
+            proxyReq: (proxyReq, req: Request) => {
               if (
                 req.method === 'POST' || req.method === 'PUT' &&
                 req.headers['content-type']?.includes('application/json') &&
                 req.body
               ) {
                 const bodyData = JSON.stringify(req.body);
-                const ParseData = JSON.parse(bodyData);
-                const decryptPayloadData = decryptPayload(ParseData.data);
-                const finalBody = JSON.stringify(decryptPayloadData);
-                proxyReq.setHeader('Content-Length', Buffer.byteLength(finalBody));
                 proxyReq.setHeader('Content-Type', 'application/json');
-                proxyReq.write(finalBody);
-                proxyReq.end();
+                proxyReq.setHeader('Content-Length', Buffer.byteLength(bodyData));
+                proxyReq.write(bodyData);
               }
             },
-            proxyRes: async (proxyRes, req: Request, res: Response) => {
+            proxyRes: (proxyRes, req: Request, res: Response) => {
               let body = Buffer.from([]);
-
               proxyRes.on('data', (chunk) => {
                 body = Buffer.concat([body, chunk]);
               });
-
               proxyRes.on('end', () => {
                 try {
                   const bodyString = body.toString('utf-8');
-                  let parsed:any;
-                  try {
-                    parsed = JSON.parse(bodyString);
-                  } catch {
-                    parsed = bodyString;
-                  }
-                  const encrypted = encryptPayload(parsed);
+                  const parsed = JSON.parse(bodyString);
                   res.setHeader('Content-Type', 'application/json');
                   res
                     .status(proxyRes.statusCode || 200)
-                    .send({ data: encrypted });
+                    .send({ data: parsed });
                 } catch (error) {
                   console.error('Error processing proxy response:', error);
                   res
