@@ -1,7 +1,6 @@
 import { Injectable, NestMiddleware } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
 import * as jwt from 'jsonwebtoken';
-import { JwtPayload } from 'jsonwebtoken';
 const JWT_SECRET = 'my-secret-key';
 
 const bypassKeywords = ['/cron', '/app'];
@@ -22,7 +21,7 @@ export class AuthMiddleware implements NestMiddleware {
     const token = authHeader.replace('Bearer ', '');
     try {
       const decoded = jwt.verify(token, JWT_SECRET) as any;
-      (req as Request & { user?: string | JwtPayload }).user = decoded;
+      (req as Request & { user?: string }).user = decoded;
       next();
     } catch (err: any) {
       console.error('JWT verification error:', err);

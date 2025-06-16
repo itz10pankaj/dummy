@@ -1,7 +1,6 @@
 type RouteConfig = {
   prefix: string;
   target: string;
-  pathRegex?: RegExp;
   middlewares?: string[];
 };
 

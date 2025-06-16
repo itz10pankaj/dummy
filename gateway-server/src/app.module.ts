@@ -1,11 +1,18 @@
-import { AuthMiddleware } from './auth/auth.middleware';
-import { LoggerMiddleware } from './logger.middleware';
+import { AuthMiddleware } from './middlewares/auth/auth.middleware';
+import { LoggerMiddleware } from './middlewares/logger.middleware';
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import { ProxyController } from './proxy/proxy.controller';
+import { NotificationController } from './Email/email.controller';
 import { routes } from './routes';
 
 @Module({
-  controllers: [ProxyController],
+    imports: [
+    ConfigModule.forRoot({
+      isGlobal: true, 
+    }),
+  ],
+  controllers: [NotificationController, ProxyController],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
@@ -18,9 +25,10 @@ export class AppModule implements NestModule {
       }
 
       if (middlewareFns.length > 0) {
-        const path = typeof route.pathRegex === 'string' ? route.pathRegex : route.prefix;
+        const path = route.prefix;
         consumer.apply(...middlewareFns).forRoutes(path);
       }
     }
   }
+  
 }
